@@ -16,6 +16,6 @@ add_library(LLVMSlicing SHARED
 	${DIR_SRCS}
 	)
 
-target_link_libraries(MyTest
+target_link_libraries(LLVMSlicing
 	${LLVM_DYNAMIC_LIBRARY}
 	)
