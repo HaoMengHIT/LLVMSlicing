@@ -29,17 +29,21 @@ bool Test::runOnModule(Module &M){
          for(auto IB=BB->begin(),IE=BB->end();IB!=IE;++IB)
          {
             IRCount++;
-            errs()<< *IB << "\n";
-            if(isa<StoreInst>(IB))
+            errs()<<">>>>>>>>instruction is >>>>>>>\n "<<*IB<<">>>>>>>>>>>>>>>>>>>\n";
+            errs()<<"------All use-----\n";
+            for(Use& U:IB->operands())
             {
-               errs()<<"-------Store instruction is "<<*IB<<"\n";
-               for(Use& U:IB->operands())
-               {
-                  errs()<<">>>>>"<<*U<<"\n";
-               }
+               errs()<<"==="<<*U<<"===\n";
             }
+            errs()<<"------All user-----\n";
+            for(User* U:IB->users())
+            {
+               errs()<<"==="<<*U<<"===\n";
+            }
+
          }
       }
    }
    errs()<<">>>>>>>>>>>>> Instruction Count: "<<IRCount<<"\n";
+   return false;
 }

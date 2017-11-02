@@ -5,6 +5,7 @@
 #include <llvm/IR/Constants.h>
 #include <llvm/Support/raw_ostream.h>
 #include <set>
+#include <vector>
 #include <iostream>
 using namespace llvm;
 using namespace std;
@@ -18,6 +19,8 @@ namespace{
       private:
          set<Instruction*> Live;
          void findLives(Instruction* I);
+         void deleteIns(Module &M);
+         void handleStoreIns();
    };
 }
 
@@ -34,7 +37,6 @@ Value* castoff(Value* v)
    }else
       return v;
 }
-
 void IRSlicer::findLives(Instruction* I)
 {
    for(Use& U:I->operands())
@@ -56,6 +58,53 @@ void IRSlicer::findLives(Instruction* I)
 
    return;
 }
+void IRSlicer::handleStoreIns()
+{
+   for(auto ite:this->Live)
+   {
+      errs()<<"(((((((((((((("<<*(dyn_cast<Instruction>(ite))<<"\n";
+      for(User* user:ite->users())
+      {
+         if(StoreInst* I = dyn_cast<StoreInst>(user))
+         {
+            errs()<<*I<<"===============================================\n";
+
+            if(this->Live.find(I) == this->Live.end())
+            {
+               errs()<<">>>Insert Instruction:\t"<<*I<<"\n";
+               this->Live.insert(I);
+            }
+         }
+      }
+   }
+   return;
+}
+void IRSlicer::deleteIns(Module &M)
+{
+   vector<Instruction*> worklist; 
+   for(auto FB=M.begin(),FE=M.end();FB!=FE;++FB)
+      for(auto BB=FB->begin(),BE=FB->end();BB!=BE;++BB)
+         for(auto IB=BB->begin(),IE=BB->end();IB!=IE;++IB)
+         {
+            Instruction* I = dyn_cast<Instruction>(IB);
+            worklist.push_back(I);
+         }
+   for(int i = worklist.size()-1;i>=0;i--)
+   {
+      Instruction* I = worklist[i];
+      if(this->Live.find(I) == this->Live.end())
+      {
+         errs()<<"Deleting instruction "<<*I<<"......\n";
+         for(User* user:I->users())
+         {
+            errs()<<*user<<"\n";
+         }
+         I->eraseFromParent();
+      }
+
+   }
+   return;
+}
 
 bool IRSlicer::runOnModule(Module &M){
 
@@ -66,7 +115,7 @@ bool IRSlicer::runOnModule(Module &M){
       {
          errs()<<BB->getName()<<"-----\n";
          auto Term = BB->getTerminator();
-         if(isa<BranchInst>(Term)||isa<SwitchInst>(Term))
+         if(isa<BranchInst>(Term)||isa<SwitchInst>(Term)||isa<ReturnInst>(Term)||isa<CallInst>(Term))
          {
             Instruction* TI = dyn_cast<Instruction>(Term);
             if(this->Live.find(TI)!=this->Live.end()) continue;
@@ -79,6 +128,8 @@ bool IRSlicer::runOnModule(Module &M){
          }
       }
    }
+   handleStoreIns();
    errs()<<this->Live.size()<<"\n";
+   deleteIns(M);
    return false;
 }
