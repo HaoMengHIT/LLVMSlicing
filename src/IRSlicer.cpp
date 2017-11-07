@@ -4,7 +4,9 @@
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/IR/InstIterator.h>
 #include <set>
+#include <map>
 #include <vector>
 #include <iostream>
 using namespace llvm;
@@ -18,14 +20,25 @@ namespace{
          bool runOnModule(Module &M) override;
       private:
          set<Instruction*> Live;
+         map<BasicBlock*,int> BBMap;
+         map<Instruction*, int> IMap;
+         void constructMap(Module& M);
+         bool addInsToLive(Instruction* I);
          void findLives(Instruction* I);
          void deleteIns(Module &M);
          void handleStoreIns();
+         void handleCallIns(Module &M);
+         void interFunction(Module &M);
    };
 }
 
 char IRSlicer::ID = 0;
 static RegisterPass<IRSlicer> X("IRSlicer","LLVM IR Slicing Pass", false, false);
+
+void IRSlicer::constructMap(Module &M)
+{
+   return;
+}
 
 Value* castoff(Value* v)
 {
@@ -46,39 +59,90 @@ void IRSlicer::findLives(Instruction* I)
       if(isa<Instruction>(V))
       {
          Instruction* VI = dyn_cast<Instruction>(V);
-         if(this->Live.find(VI)!=this->Live.end()) return;
-         else
-         {
-            this->Live.insert(VI);
-            errs()<<">>>Insert Instruction:\t"<<*VI<<"\n";
-            findLives(VI);
-         }
+         if(addInsToLive(VI)) findLives(VI);
+         else return;
       }
    }
 
    return;
 }
+/*Handle store instructions*/
 void IRSlicer::handleStoreIns()
 {
+   errs()<<"Handle store instruction!!!\n";
    for(auto ite:this->Live)
    {
-      errs()<<"(((((((((((((("<<*(dyn_cast<Instruction>(ite))<<"\n";
       for(User* user:ite->users())
       {
          if(StoreInst* I = dyn_cast<StoreInst>(user))
          {
-            errs()<<*I<<"===============================================\n";
-
-            if(this->Live.find(I) == this->Live.end())
+            if(ite != I->getOperand(1)) continue;
+            auto firstOp = I->getOperand(0);
+            if(addInsToLive(I))
             {
-               errs()<<">>>Insert Instruction:\t"<<*I<<"\n";
-               this->Live.insert(I);
+               if(isa<Constant>(I->getOperand(0)))
+               {
+                  errs()<<*firstOp<<"\n";
+                  continue;
+               }
+               else
+               {
+                  Instruction* firstOpIns = dyn_cast<Instruction>(firstOp);
+                  if(addInsToLive(firstOpIns)) findLives(firstOpIns);
+               }
             }
          }
       }
    }
    return;
 }
+bool IRSlicer::addInsToLive(Instruction* I)
+{
+   if(this->Live.find(I) == this->Live.end())
+   {
+      errs()<<">>>Insert Instruction:\t" << *I<<"\n";
+      this->Live.insert(I);
+      return true;
+   }
+   return false;
+}
+/*Handle inter-function cases*/
+void IRSlicer::handleCallIns(Module &M)
+{
+   for(auto FB=M.begin(),FE=M.end();FB!=FE;++FB)
+      for(auto BB=FB->begin(),BE=FB->end();BB!=BE;++BB)
+         for(auto IB=BB->begin(),IE=BB->end();IB!=IE;++IB)
+         {
+            if(CallInst* CI = dyn_cast<CallInst>(IB))
+            {
+               for(User* user:CI->users())
+               {
+                  if(StoreInst* I = dyn_cast<StoreInst>(user))
+                  {
+                     if(addInsToLive(CI))
+                     {
+                        vector<Use*> CIUse;
+                        for(Use& U:CI->operands())
+                        {
+                           Use* tmp = &U;
+                           CIUse.push_back(tmp);
+                        }
+                        errs()<<CIUse.size()<<"\n";
+                        for(int i = 0;i < CIUse.size()-1;i++)
+                        {
+                           Instruction* ins = dyn_cast<Instruction>(CI->getOperand(i));
+                           if(addInsToLive(ins)) findLives(ins);
+                        }
+                     }
+                     Instruction* secondOp = dyn_cast<Instruction>(I->getOperand(1));
+                     addInsToLive(secondOp);
+                  }
+               }
+            }
+         }
+   return ;
+}
+/*Deete instructoins which are not in Live set by the order of down-up*/
 void IRSlicer::deleteIns(Module &M)
 {
    vector<Instruction*> worklist; 
@@ -105,6 +169,30 @@ void IRSlicer::deleteIns(Module &M)
    }
    return;
 }
+void IRSlicer::interFunction(Module &M)
+{
+   for(auto FB = M.begin(),FE = M.end();FB!=FE;++FB)
+   {
+      if(FB->isDeclaration()) continue;
+      errs()<<"Strat dealing functoin "<<FB->getName()<<"\n" ;     
+      if(FB->getName() == "main")
+      {
+         for(auto BB=FB->begin(),BE=FB->end();BB!=BE;++BB)
+            for(auto IB = BB->begin(),IE = BB->end();IB!=IE;++IB)
+            {
+               auto Ins = IB;
+               ReturnInst* RI = dyn_cast<ReturnInst>(IB);
+               if(RI == NULL) continue;
+               Value* Ret = RI->getReturnValue(); 
+               ReturnInst* newRet = ReturnInst::Create(FB->getContext(), UndefValue::get(Ret->getType()), RI->getParent());
+               Ins->eraseFromParent();
+               addInsToLive(newRet);
+            }
+      }
+   }
+   errs()<<"ok\n";
+   return;
+}
 
 bool IRSlicer::runOnModule(Module &M){
 
@@ -115,20 +203,18 @@ bool IRSlicer::runOnModule(Module &M){
       {
          errs()<<BB->getName()<<"-----\n";
          auto Term = BB->getTerminator();
-         if(isa<BranchInst>(Term)||isa<SwitchInst>(Term)||isa<ReturnInst>(Term)||isa<CallInst>(Term))
+         if(isa<BranchInst>(Term)||isa<SwitchInst>(Term))
          {
             Instruction* TI = dyn_cast<Instruction>(Term);
-            if(this->Live.find(TI)!=this->Live.end()) continue;
-            else
-            {
-               this->Live.insert(TI);
-               errs()<<">>>Insert Instruction:\t"<<*TI<<"\n";
-               findLives(TI);
-            }
+            if(addInsToLive(TI)) findLives(TI);
+            else continue;
          }
       }
    }
-   handleStoreIns();
+   //   handleStoreIns();
+   //   handleCallIns(M);
+   errs()<<this->Live.size()<<"\n";
+   interFunction(M);
    errs()<<this->Live.size()<<"\n";
    deleteIns(M);
    return false;

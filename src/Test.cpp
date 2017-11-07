@@ -22,6 +22,13 @@ char Test::ID = 0;
 static RegisterPass<Test> X("Test","My Test",false,false);
 bool Test::runOnModule(Module &M){
    int IRCount = 0;
+   for(auto FB=M.begin(),FE = M.end();FB!=FE;++FB)
+   {
+      if(FB->isDeclaration())
+         errs()<<*FB<<"\n";
+      else
+         errs()<<"hello\n";
+   }
    for(auto FB=M.begin(),FE=M.end();FB!=FE;++FB)
    {
       for(auto BB=FB->begin(),BE=FB->end();BB!=BE;++BB)
@@ -29,16 +36,14 @@ bool Test::runOnModule(Module &M){
          for(auto IB=BB->begin(),IE=BB->end();IB!=IE;++IB)
          {
             IRCount++;
-            errs()<<">>>>>>>>instruction is >>>>>>>\n "<<*IB<<">>>>>>>>>>>>>>>>>>>\n";
-            errs()<<"------All use-----\n";
-            for(Use& U:IB->operands())
+            if(CallInst* CI = dyn_cast<CallInst>(IB))
             {
-               errs()<<"==="<<*U<<"===\n";
-            }
-            errs()<<"------All user-----\n";
-            for(User* U:IB->users())
-            {
-               errs()<<"==="<<*U<<"===\n";
+               errs()<<">>>>>>>>>>>>>>>>>>>>>>>>>"<<*CI<<"\n";
+               errs()<<CI->getNumUses()<<"\n";
+               for(Use& U:CI->operands())
+               {
+                  errs()<<*U<<"\n===================\n";
+               }
             }
 
          }
