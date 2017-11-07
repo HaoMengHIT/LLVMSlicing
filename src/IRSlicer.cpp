@@ -5,6 +5,7 @@
 #include <llvm/IR/Constants.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/IR/InstIterator.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
 #include <set>
 #include <map>
 #include <vector>
@@ -28,7 +29,7 @@ namespace{
          void deleteIns(Module &M);
          void handleStoreIns();
          void handleCallIns(Module &M);
-         void interFunction(Module &M);
+         void interFunction(Function* M,bool isRetUsed);
    };
 }
 
@@ -169,28 +170,49 @@ void IRSlicer::deleteIns(Module &M)
    }
    return;
 }
-void IRSlicer::interFunction(Module &M)
+void IRSlicer::interFunction(Function* FB, bool isRetUsed)
 {
-   for(auto FB = M.begin(),FE = M.end();FB!=FE;++FB)
+   if(FB->isDeclaration()) return;
+   errs()<<"Strat dealing functoin "<<FB->getName()<<"\n" ;     
+   for(auto Ite = inst_begin(FB), E = inst_end(FB); Ite!=E;)
    {
-      if(FB->isDeclaration()) continue;
-      errs()<<"Strat dealing functoin "<<FB->getName()<<"\n" ;     
-      if(FB->getName() == "main")
+      Instruction* ins = &*Ite;
+      ++Ite;
+      if(ReturnInst* RI = dyn_cast<ReturnInst>(ins))
       {
-         for(auto BB=FB->begin(),BE=FB->end();BB!=BE;++BB)
-            for(auto IB = BB->begin(),IE = BB->end();IB!=IE;++IB)
+         if(isRetUsed == false)
+         {
+            Value* Ret = RI->getReturnValue(); 
+            ReturnInst* newRet = ReturnInst::Create(FB->getContext(), UndefValue::get(Ret->getType()));
+            BasicBlock::iterator ii(RI);
+            ReplaceInstWithInst(RI->getParent()->getInstList(),ii,newRet);
+            errs()<<*newRet<<"\n";
+            addInsToLive(newRet);
+         }
+         else
+         {
+            if(addInsToLive(ins)) findLives(ins);
+         }
+      }
+      if(CallInst* CI = dyn_cast<CallInst>(ins))
+      {
+         Function* callee = CI->getCalledFunction();
+         if(callee->isDeclaration()) continue;
+         errs()<<*CI<<"\n";
+         for(User* U:CI->users())
+         {
+            if(Instruction* I = dyn_cast<Instruction>(U))
             {
-               auto Ins = IB;
-               ReturnInst* RI = dyn_cast<ReturnInst>(IB);
-               if(RI == NULL) continue;
-               Value* Ret = RI->getReturnValue(); 
-               ReturnInst* newRet = ReturnInst::Create(FB->getContext(), UndefValue::get(Ret->getType()), RI->getParent());
-               Ins->eraseFromParent();
-               addInsToLive(newRet);
+               errs()<<*I<<"\n";
+               if(this->Live.find(I) != this->Live.end())
+               {
+                  interFunction(callee,true);
+                  break;
+               }
             }
+         }
       }
    }
-   errs()<<"ok\n";
    return;
 }
 
@@ -214,7 +236,7 @@ bool IRSlicer::runOnModule(Module &M){
    //   handleStoreIns();
    //   handleCallIns(M);
    errs()<<this->Live.size()<<"\n";
-   interFunction(M);
+   interFunction(M.getFunction("main"),false);
    errs()<<this->Live.size()<<"\n";
    deleteIns(M);
    return false;
