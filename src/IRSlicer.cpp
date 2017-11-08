@@ -24,6 +24,7 @@ namespace{
          map<BasicBlock*,int> BBMap;
          map<Instruction*, int> IMap;
          void constructMap(Module& M);
+         void UsedAfter(vector<Instruction*>& judgeIns, Instruction* currentIns);
          bool addInsToLive(Instruction* I);
          void findLives(Instruction* I);
          void deleteIns(Module &M);
@@ -170,6 +171,11 @@ void IRSlicer::deleteIns(Module &M)
    }
    return;
 }
+void IRSlicer::UsedAfter(vector<Instruction*>& judgeIns, Instruction* currentIns)
+{
+   BasicBlock* currentBB = currentIns->getParent();
+   return;
+}
 void IRSlicer::interFunction(Function* FB, bool isRetUsed)
 {
    if(FB->isDeclaration()) return;
@@ -186,7 +192,6 @@ void IRSlicer::interFunction(Function* FB, bool isRetUsed)
             ReturnInst* newRet = ReturnInst::Create(FB->getContext(), UndefValue::get(Ret->getType()));
             BasicBlock::iterator ii(RI);
             ReplaceInstWithInst(RI->getParent()->getInstList(),ii,newRet);
-            errs()<<*newRet<<"\n";
             addInsToLive(newRet);
          }
          else
