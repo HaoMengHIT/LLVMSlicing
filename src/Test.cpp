@@ -34,10 +34,14 @@ bool Test::runOnModule(Module &M){
                errs()<<"=======\t"<<*LI<<"\n";
                for(Use& U:LI->operands())
                {
-                  User* user = U.getUser();
-                  auto next = U.getNext();
-                  Instruction* ins = dyn_cast<Instruction>(next);
-                  errs()<<*ins<<"\n";
+                  Use* next = &U;
+                  do
+                  {
+                     auto V = next->getUser();
+                     Instruction* ins = dyn_cast<Instruction>(V);
+                     errs()<<*ins<<"\n";
+                  }
+                  while((next = next->getNext()));
                }
             }
 

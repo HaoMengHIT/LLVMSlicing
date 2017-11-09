@@ -58,6 +58,22 @@ void IRSlicer::findLives(Instruction* I)
    {
       Value* V = U.get();
       if(isa<Constant>(V)) continue;
+      if(isa<LoadInst>(I))
+      {
+         LoadInst* LI = dyn_cast<LoadInst>(I);
+         Use* next = &U;
+         do
+         {
+            auto Tmp = next->getUser();
+            if(isa<StoreInst>(Tmp) && Tmp->getOperand(1) == next->get())
+            {
+               Instruction* ins = dyn_cast<Instruction>(Tmp);
+               if(addInsToLive(ins)) findLives(ins);
+               break;
+            }
+         }
+         while((next = next->getNext()));
+      }
       if(isa<Instruction>(V))
       {
          Instruction* VI = dyn_cast<Instruction>(V);
@@ -171,11 +187,6 @@ void IRSlicer::deleteIns(Module &M)
    }
    return;
 }
-void IRSlicer::UsedAfter(vector<Instruction*>& judgeIns, Instruction* currentIns)
-{
-   BasicBlock* currentBB = currentIns->getParent();
-   return;
-}
 void IRSlicer::interFunction(Function* FB, bool isRetUsed)
 {
    if(FB->isDeclaration()) return;
@@ -203,12 +214,10 @@ void IRSlicer::interFunction(Function* FB, bool isRetUsed)
       {
          Function* callee = CI->getCalledFunction();
          if(callee->isDeclaration()) continue;
-         errs()<<*CI<<"\n";
          for(User* U:CI->users())
          {
             if(Instruction* I = dyn_cast<Instruction>(U))
             {
-               errs()<<*I<<"\n";
                if(this->Live.find(I) != this->Live.end())
                {
                   interFunction(callee,true);
