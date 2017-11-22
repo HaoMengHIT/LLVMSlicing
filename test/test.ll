@@ -6,13 +6,13 @@ target triple = "x86_64-unknown-linux-gnu"
 @.str1 = private unnamed_addr constant [7 x i8] c"Error\0A\00", align 1
 
 ; Function Attrs: nounwind uwtable
-define i32 @sumFunc(i32 %sum, i32 %num) #0 {
+define i32 @sumFunc(i32 %num) #0 {
 entry:
-  %sum.addr = alloca i32, align 4
   %num.addr = alloca i32, align 4
+  %sum = alloca i32, align 4
   %i = alloca i32, align 4
-  store i32 %sum, i32* %sum.addr, align 4
   store i32 %num, i32* %num.addr, align 4
+  store i32 0, i32* %sum, align 4
   store i32 0, i32* %i, align 4
   br label %for.cond
 
@@ -29,11 +29,11 @@ for.body:                                         ; preds = %for.cond
   %3 = load i32* %i, align 4
   %conv1 = sitofp i32 %3 to double
   %mul = fmul double %call, %conv1
-  %4 = load i32* %sum.addr, align 4
+  %4 = load i32* %sum, align 4
   %conv2 = sitofp i32 %4 to double
   %add = fadd double %conv2, %mul
   %conv3 = fptosi double %add to i32
-  store i32 %conv3, i32* %sum.addr, align 4
+  store i32 %conv3, i32* %sum, align 4
   br label %for.inc
 
 for.inc:                                          ; preds = %for.body
@@ -43,7 +43,7 @@ for.inc:                                          ; preds = %for.body
   br label %for.cond
 
 for.end:                                          ; preds = %for.cond
-  %6 = load i32* %sum.addr, align 4
+  %6 = load i32* %sum, align 4
   ret i32 %6
 }
 
@@ -54,22 +54,20 @@ declare double @sqrt(double) #1
 define i32 @main() #0 {
 entry:
   %retval = alloca i32, align 4
-  %sum = alloca i32, align 4
   %num = alloca i32, align 4
+  %sum = alloca i32, align 4
   store i32 0, i32* %retval
-  store i32 0, i32* %sum, align 4
   store i32 100, i32* %num, align 4
-  %0 = load i32* %sum, align 4
-  %1 = load i32* %num, align 4
-  %call = call i32 @sumFunc(i32 %0, i32 %1)
+  %0 = load i32* %num, align 4
+  %call = call i32 @sumFunc(i32 %0)
   store i32 %call, i32* %sum, align 4
-  %2 = load i32* %sum, align 4
-  %cmp = icmp sgt i32 %2, 10000
+  %1 = load i32* %sum, align 4
+  %cmp = icmp sgt i32 %1, 10000
   br i1 %cmp, label %if.then, label %if.else
 
 if.then:                                          ; preds = %entry
-  %3 = load i32* %sum, align 4
-  %call1 = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([10 x i8]* @.str, i32 0, i32 0), i32 %3)
+  %2 = load i32* %sum, align 4
+  %call1 = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([10 x i8]* @.str, i32 0, i32 0), i32 %2)
   br label %if.end
 
 if.else:                                          ; preds = %entry
