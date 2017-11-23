@@ -117,7 +117,9 @@ void IRSlicer::deleteIns(Module &M)
             Instruction* userIns = dyn_cast<Instruction>(user);
             errs()<<*userIns<<"\n";
          }
+         I->replaceAllUsesWith(UndefValue::get(I->getType()));
          I->eraseFromParent();
+         //I->removeFromParent();
       }
 
    }
@@ -125,7 +127,7 @@ void IRSlicer::deleteIns(Module &M)
 }
 void IRSlicer::deleteNoUsedFunc(Module &M)
 {
-   for(auto FB = M.begin(),FE = M.end();FB!=FE;++FB)
+   for(auto FB = M.begin(),FE = M.end();FB!=FE;)
    {  Function* F = &*FB;
       ++FB;
       if(this->UsedFunc.find(F) == this->UsedFunc.end())
@@ -160,10 +162,14 @@ void IRSlicer::interFunction(Function* FB, bool isRetUsed)
             if(addInsToLive(ins)) findLives(ins);
          }
       }
+   }
+   for(auto Ite = inst_begin(FB), E = inst_end(FB); Ite!=E;)
+   {
+      Instruction* ins = &*Ite;
+      ++Ite;
       if(CallInst* CI = dyn_cast<CallInst>(ins))
       {
          Function* callee = CI->getCalledFunction();
-         if(callee->isDeclaration()) continue;
          for(User* U:CI->users())
          {
             if(Instruction* I = dyn_cast<Instruction>(U))
@@ -177,6 +183,7 @@ void IRSlicer::interFunction(Function* FB, bool isRetUsed)
          }
       }
    }
+  
    return;
 }
 
