@@ -10,10 +10,12 @@
 #include <map>
 #include <vector>
 #include <iostream>
+#include "ReachingDef.h"
 using namespace llvm;
 using namespace std;
+using namespace lle;
 
-namespace{
+namespace {
    class IRSlicer:public ModulePass{
       public:
          static char ID;
@@ -51,7 +53,6 @@ void IRSlicer::findLives(Instruction* I)
       if(isa<Constant>(V)) continue;
       if(isa<LoadInst>(I))
       {
-         LoadInst* LI = dyn_cast<LoadInst>(I);
          Use* next = &U;
          do
          {
@@ -189,6 +190,12 @@ void IRSlicer::interFunction(Function* FB, bool isRetUsed)
 
 bool IRSlicer::runOnModule(Module &M){
 
+   ReachingDefinitions RDef;
+   for(auto FB=M.begin(),FE=M.end();FB!=FE;++FB)
+   {
+      if(FB->isDeclaration()) continue;
+      RDef.dealFunction(*FB);
+   }
    for(auto FB=M.begin(),FE=M.end();FB!=FE;++FB)
    {
       if(FB->isDeclaration()) continue;
