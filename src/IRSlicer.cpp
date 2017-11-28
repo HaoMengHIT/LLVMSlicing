@@ -1,36 +1,4 @@
-#include <llvm/Pass.h>
-#include <llvm/IR/Function.h>
-#include <llvm/IR/Module.h>
-#include <llvm/IR/Instructions.h>
-#include <llvm/IR/Constants.h>
-#include <llvm/Support/raw_ostream.h>
-#include <llvm/IR/InstIterator.h>
-#include <llvm/Transforms/Utils/BasicBlockUtils.h>
-#include <set>
-#include <map>
-#include <vector>
-#include <iostream>
-#include "ReachingDef.h"
-using namespace llvm;
-using namespace std;
-using namespace lle;
-
-namespace {
-   class IRSlicer:public ModulePass{
-      public:
-         static char ID;
-         IRSlicer():ModulePass(ID){}
-         bool runOnModule(Module &M) override;
-      private:
-         set<Instruction*> Live;
-         set<Function*> UsedFunc;
-         void deleteNoUsedFunc(Module &M);
-         bool addInsToLive(Instruction* I);
-         void findLives(Instruction* I);
-         void deleteIns(Module &M);
-         void interFunction(Function* M,bool isRetUsed);
-   };
-}
+#include "IRSlicer.h"
 
 char IRSlicer::ID = 0;
 static RegisterPass<IRSlicer> X("IRSlicer","LLVM IR Slicing Pass", false, false);
@@ -45,26 +13,72 @@ Value* castoff(Value* v)
    }else
       return v;
 }
+/*
+ * getReachDefStoreIns:
+ *
+ * This method can find all store instructions before current load instruction
+ *
+ * For example
+ *    BB1:
+ *       ...
+ *       store i32 0, i32* %i, align 4
+ *       ...
+ *       br BB2
+ *
+ *    BB2:
+ *       ...
+ *       load i32* %i, align 4
+ *       ...
+ *
+ *    BBn:
+ *       ...
+ *       store i32 %inc, i32* %i, align 4
+ *       ...
+ *       br BB2
+ */
+void IRSlicer::getReachDefStoreIns(Instruction* I, std::set<Value*>& storeInsSet)
+{
+   std::set<Value*>& reachTmp = this->RDef.InsReach[I];
+   for(Use& U:I->operands())
+   {
+      Value* V = U.get();
+      for(auto Ins:reachTmp)
+      {
+         if(StoreInst* SI = dyn_cast<StoreInst>(&*Ins))
+         {
+            if(V == SI->getOperand(1))
+            {
+               storeInsSet.insert(SI);
+            }
+         }
+      }
+
+   }
+   return;
+}
+
+/*
+ * findLives:
+ *
+ * This method can find all instructions on which the current instruction is dependent. 
+ */
 void IRSlicer::findLives(Instruction* I)
 {
    for(Use& U:I->operands())
    {
       Value* V = U.get();
       if(isa<Constant>(V)) continue;
-      if(isa<LoadInst>(I))
+      else if(isa<LoadInst>(I))
       {
-         Use* next = &U;
-         do
+         std::set<Value*> reachStore;
+         //Apply reaching-definition method to get all store instructions before current load instruction.
+         getReachDefStoreIns(I, reachStore);
+         for(auto tmp:reachStore)
          {
-            auto Tmp = next->getUser();
-            if(isa<StoreInst>(Tmp) && Tmp->getOperand(1) == next->get())
-            {
-               Instruction* ins = dyn_cast<Instruction>(Tmp);
-               if(addInsToLive(ins)) findLives(ins);
-               break;
-            }
+            Instruction* si = dyn_cast<Instruction>(&*tmp);
+            if(addInsToLive(si)) findLives(si);
          }
-         while((next = next->getNext()));
+         
       }
       if(isa<Instruction>(V))
       {
@@ -86,19 +100,13 @@ bool IRSlicer::addInsToLive(Instruction* I)
    }
    return false;
 }
-/*Deete instructoins which are not in Live set by the order of down-up*/
+
+/*
+ * deleteIns:
+ * This method can delete instructoins which are not in Live set by the order of down-up
+ * */
 void IRSlicer::deleteIns(Module &M)
 {
-   for(auto FB=M.begin(),FE=M.end();FB!=FE;++FB)
-   {
-      for(auto Ite = inst_begin(FB), E = inst_end(FB); Ite!=E;)
-      {
-         Instruction* ins = &*Ite;
-         ++Ite;
-      }
-
-   }
-
    vector<Instruction*> worklist; 
    for(auto FB=M.begin(),FE=M.end();FB!=FE;++FB)
       for(auto BB=FB->begin(),BE=FB->end();BB!=BE;++BB)
@@ -126,6 +134,10 @@ void IRSlicer::deleteIns(Module &M)
    }
    return;
 }
+/*
+ * deleteNoUsedFunc:
+ * This method can delete all functions of which return results are not used in other functions.
+ */
 void IRSlicer::deleteNoUsedFunc(Module &M)
 {
    for(auto FB = M.begin(),FE = M.end();FB!=FE;)
@@ -139,6 +151,13 @@ void IRSlicer::deleteNoUsedFunc(Module &M)
    }
    return;
 }
+
+/*
+ * interFunction:
+ * This method is used to judge whether the the return value of current function is used in other functions.
+ * If not, replace the return value by undef value, 
+ * otherwise, store the return instruction and its dependent instructions into Live set.
+ */
 void IRSlicer::interFunction(Function* FB, bool isRetUsed)
 {
    this->UsedFunc.insert(FB);
@@ -190,11 +209,10 @@ void IRSlicer::interFunction(Function* FB, bool isRetUsed)
 
 bool IRSlicer::runOnModule(Module &M){
 
-   ReachingDefinitions RDef;
    for(auto FB=M.begin(),FE=M.end();FB!=FE;++FB)
    {
       if(FB->isDeclaration()) continue;
-      RDef.dealFunction(*FB);
+      this->RDef.dealFunction(*FB);
    }
    for(auto FB=M.begin(),FE=M.end();FB!=FE;++FB)
    {
