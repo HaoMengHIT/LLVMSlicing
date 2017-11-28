@@ -3,6 +3,7 @@ include_directories(
 	${LLVM_PROF_INCLUDE_DIRS}
 	${PROJECT_BINARY_DIR}
 	${LLVM_INCLUDE_DIRS} 
+   ../include
 	)
 link_directories(
    ${LLVM_LIBRARY_DIRS} 

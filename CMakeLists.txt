@@ -12,4 +12,5 @@ endif()
 
 find_package(LLVM)
 
+add_subdirectory(include)
 add_subdirectory(src)
