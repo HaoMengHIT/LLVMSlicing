@@ -143,7 +143,8 @@ void IRSlicer::deleteNoUsedFunc(Module &M)
    for(auto FB = M.begin(),FE = M.end();FB!=FE;)
    {  Function* F = &*FB;
       ++FB;
-      if(this->UsedFunc.find(F) == this->UsedFunc.end())
+      //Contain Not declaration function and delete noused declaration function 
+      if(this->UsedFunc.find(F) == this->UsedFunc.end() && F->isDeclaration())
       {
          errs()<<"Deleting function "<<F->getName()<<"\n";
          M.getFunctionList().erase(F);
