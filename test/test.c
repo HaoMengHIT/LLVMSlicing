@@ -1,8 +1,9 @@
 #include<stdio.h>
 #include<math.h>
 
-int sumFunc(int sum,int num)
+int sumFunc(int num)
 {
+   int sum = 0;
    for(int i = 0;i < num;i++)
    {
       sum+=(sqrt(i)*i);
@@ -11,12 +12,8 @@ int sumFunc(int sum,int num)
 }
 int main()
 {
-   int sum = 0;
    int num = 100;
-   sum = sumFunc(sum,num);
-   if(sum > 10000)
-       printf("Sum = %d\n",sum);
-   else
-      printf("Error\n");
+   int sum = sumFunc(num);
+   printf("Sum = %d\n",sum);
    return 0;
 }
