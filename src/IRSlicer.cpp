@@ -78,7 +78,7 @@ void IRSlicer::findLives(Instruction* I)
             Instruction* si = dyn_cast<Instruction>(&*tmp);
             if(addInsToLive(si)) findLives(si);
          }
-         
+
       }
       if(isa<Instruction>(V))
       {
@@ -191,20 +191,26 @@ void IRSlicer::interFunction(Function* FB, bool isRetUsed)
       if(CallInst* CI = dyn_cast<CallInst>(ins))
       {
          Function* callee = CI->getCalledFunction();
+         bool isUsed = false;
          for(User* U:CI->users())
          {
             if(Instruction* I = dyn_cast<Instruction>(U))
             {
                if(this->Live.find(I) != this->Live.end())
                {
-                  interFunction(callee,true);
+                  isUsed = true;
+                  interFunction(callee,isUsed);
                   break;
                }
             }
          }
+         if(!isUsed)
+         {
+            interFunction(callee,isUsed);
+         }
       }
    }
-  
+
    return;
 }
 
@@ -228,6 +234,19 @@ bool IRSlicer::runOnModule(Module &M){
             Instruction* TI = dyn_cast<Instruction>(Term);
             if(addInsToLive(TI)) findLives(TI);
             else continue;
+         }
+         for(auto IB=BB->begin(),IE=BB->end();IB!=IE;++IB)
+         {
+            if(CallInst* CI = dyn_cast<CallInst>(IB))
+            {
+               Function* callee = CI->getCalledFunction();
+               if(!(callee->isDeclaration()))
+               {
+                  if(addInsToLive(CI)) findLives(CI);
+                  else continue;
+               }
+            }
+
          }
       }
    }

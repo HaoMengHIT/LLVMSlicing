@@ -4,6 +4,7 @@
 int main()
 {
    int sum = 0;
+   printf("Master thread %d\n",omp_get_thread_num());
 #pragma omp parallel
    {
 #pragma omp for reduction(+:sum)
@@ -11,7 +12,7 @@ int main()
       {
          sum+=i;
       }
-//      printf("Thread %d: Sum = %d\n",omp_get_thread_num(),sum);
+      printf("Thread %d: Sum = %d\n",omp_get_thread_num(),sum);
    }
    if(sum>=10000)
       printf("Final sum = %d\n",sum);
