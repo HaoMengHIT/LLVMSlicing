@@ -15,12 +15,12 @@ To be continued ...
 Compile and install ***LLVMSlicing***
 
 ```bash
- 	 $ cd LLVMSlicing
-    $ mkdir build;
-    $ cd build
-    $ cmake ..
-    $ make
-    $ make install
+$ cd LLVMSlicing
+$ mkdir build;
+$ cd build
+$ cmake ..
+$ make
+$ make install
 ```
 
 ## Example
