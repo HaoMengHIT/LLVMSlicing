@@ -3,7 +3,6 @@
 
 To be continued ...
 
-=========
 # Author:
 
 1. HaoMengHIT: <haomeng@hit.edu.cn>
@@ -14,12 +13,18 @@ To be continued ...
 
 
 Compile and install ***LLVMSlicing***
+
 	```bash
  	 $ cd LLVMSlicing
+
     $ mkdir build;
+
     $ cd build
+
     $ cmake ..
+
     $ make
+
     $ make install
 	```
 
