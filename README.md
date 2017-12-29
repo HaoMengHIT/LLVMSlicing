@@ -14,19 +14,14 @@ To be continued ...
 
 Compile and install ***LLVMSlicing***
 
-	```bash
+```bash
  	 $ cd LLVMSlicing
-
     $ mkdir build;
-
     $ cd build
-
     $ cmake ..
-
     $ make
-
     $ make install
-	```
+```
 
 ## Example
 
