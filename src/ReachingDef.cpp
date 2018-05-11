@@ -97,15 +97,15 @@ namespace lle{
       DataFlowResult dataFlowResult = flow.run(F, domain, DataFlow::FORWARD, boundaryCond, initInteriorCond);
 
       //Then, extend those values into the interior points of each block, outputting the result along the way
-      errs() << "\n****************** REACHING DEFINITIONS OUTPUT FOR FUNCTION: " << F.getName() << " *****************\n";
-      errs() << "Domain of values: " << setToStr(domain, BitVector(domain.size(), true), valueToDefinitionStr) << "\n";
-      errs() << "Variables: "   << setToStr(domain, BitVector(domain.size(), true), valueToDefinitionVarStr) << "\n";
+      DEBUG(errs() << "\n****************** REACHING DEFINITIONS OUTPUT FOR FUNCTION: " << F.getName() << " *****************\n");
+      DEBUG(errs() << "Domain of values: " << setToStr(domain, BitVector(domain.size(), true), valueToDefinitionStr) << "\n");
+      DEBUG(errs() << "Variables: "   << setToStr(domain, BitVector(domain.size(), true), valueToDefinitionVarStr) << "\n");
 
       //Print function header (in hacky way... look for "definition" keyword in full printed function, then print rest of that line only)
       std::string funcStr = valueToStr(&F);
       int funcHeaderStartIdx = funcStr.find("define");
       int funcHeaderEndIdx = funcStr.find('{', funcHeaderStartIdx + 1);
-      errs() << funcStr.substr(funcHeaderStartIdx, funcHeaderEndIdx-funcHeaderStartIdx) << "\n";
+      DEBUG(errs() << funcStr.substr(funcHeaderStartIdx, funcHeaderEndIdx-funcHeaderStartIdx) << "\n");
 
       //Now, use dataflow results to output reaching definitions at program points within each block
       for (Function::iterator basicBlock = F.begin(); basicBlock != F.end(); ++basicBlock) {
@@ -114,7 +114,7 @@ namespace lle{
 
          //Print just the header line of the block (in a hacky way... blocks start w/ newline, so look for first occurrence of newline beyond first char
          std::string basicBlockStr = valueToStr(basicBlock);
-         errs() << basicBlockStr.substr(0, basicBlockStr.find(':', 1) + 1) << "\n";
+         DEBUG(errs() << basicBlockStr.substr(0, basicBlockStr.find(':', 1) + 1) << "\n");
 
          //Initialize reaching definitions at the start of the block
          BitVector reachingDefVals = blockReachingDefVals.in;
@@ -153,16 +153,16 @@ namespace lle{
                {
                   getReachDef(domain, reachingDefVals, InsRes);
                   this->InsReach[instruction] = InsRes;
-                  errs()<<*instruction<<"\t"<<InsRes.size()<<"================================================================\n";
+                  DEBUG(errs()<<*instruction<<"\t"<<InsRes.size()<<"================================================================\n");
                }
                instruction--;
             }
          }
 
          for (std::vector<std::string>::iterator i = blockOutputLines.begin(); i < blockOutputLines.end(); ++i)
-            errs() << *i << "\n";
+            DEBUG(errs() << *i << "\n");
       }
-      errs() << "****************** END REACHING DEFINITION OUTPUT FOR FUNCTION: " << F.getName() << " ******************\n\n";
+      DEBUG(errs() << "****************** END REACHING DEFINITION OUTPUT FOR FUNCTION: " << F.getName() << " ******************\n\n");
 
       // Did not modify the incoming Function.
       return;

@@ -11,6 +11,7 @@
 #include <vector>
 #include <iostream>
 #include "ReachingDef.h"
+#include "debug.h"
 using namespace llvm;
 using namespace std;
 using namespace lle;

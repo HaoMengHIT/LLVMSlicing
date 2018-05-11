@@ -94,7 +94,7 @@ bool IRSlicer::addInsToLive(Instruction* I)
 {
    if(this->Live.find(I) == this->Live.end())
    {
-      errs()<<">>>Insert Instruction:\t" << *I<<"\n";
+      DEBUG(errs()<<">>>Insert Instruction:\t" << *I<<"\n");
       this->Live.insert(I);
       return true;
    }
@@ -120,11 +120,11 @@ void IRSlicer::deleteIns(Module &M)
       Instruction* I = worklist[i];
       if(this->Live.find(I) == this->Live.end())
       {
-         errs()<<"Deleting instruction "<<*I<<"......\n";
+         DEBUG(errs()<<"Deleting instruction "<<*I<<"......\n");
          for(User* user:I->users())
          {
             Instruction* userIns = dyn_cast<Instruction>(user);
-            errs()<<*userIns<<"\n";
+            DEBUG(errs()<<*userIns<<"\n");
          }
          I->replaceAllUsesWith(UndefValue::get(I->getType()));
          I->eraseFromParent();
@@ -146,7 +146,7 @@ void IRSlicer::deleteNoUsedFunc(Module &M)
       //Contain Not declaration function and delete noused declaration function 
       if(this->UsedFunc.find(F) == this->UsedFunc.end() && F->isDeclaration())
       {
-         errs()<<"Deleting function "<<F->getName()<<"\n";
+         DEBUG(errs()<<"Deleting function "<<F->getName()<<"\n");
          M.getFunctionList().erase(F);
       }
    }
@@ -163,7 +163,7 @@ void IRSlicer::interFunction(Function* FB, bool isRetUsed)
 {
    this->UsedFunc.insert(FB);
    if(FB->isDeclaration()) return;
-   errs()<<"Strat dealing functoin "<<FB->getName()<<"\n" ;     
+   DEBUG(errs()<<"Strat dealing functoin "<<FB->getName()<<"\n");     
    for(auto Ite = inst_begin(FB), E = inst_end(FB); Ite!=E;)
    {
       Instruction* ins = &*Ite;
@@ -173,10 +173,17 @@ void IRSlicer::interFunction(Function* FB, bool isRetUsed)
          if(isRetUsed == false)
          {
             Value* Ret = RI->getReturnValue(); 
-            ReturnInst* newRet = ReturnInst::Create(FB->getContext(), UndefValue::get(Ret->getType()));
-            BasicBlock::iterator ii(RI);
-            ReplaceInstWithInst(RI->getParent()->getInstList(),ii,newRet);
-            addInsToLive(newRet);
+            if(Ret != NULL)
+            {
+               ReturnInst* newRet = ReturnInst::Create(FB->getContext(), UndefValue::get(Ret->getType()));
+               BasicBlock::iterator ii(RI);
+               ReplaceInstWithInst(RI->getParent()->getInstList(),ii,newRet);
+               addInsToLive(newRet);
+            }
+            else
+            {
+               addInsToLive(RI);
+            }
          }
          else
          {
@@ -224,10 +231,10 @@ bool IRSlicer::runOnModule(Module &M){
    for(auto FB=M.begin(),FE=M.end();FB!=FE;++FB)
    {
       if(FB->isDeclaration()) continue;
-      errs()<<FB->getName()<<"==========================================\n";
+      DEBUG(errs()<<FB->getName()<<"==========================================\n");
       for(auto BB=FB->begin(),BE=FB->end();BB!=BE;++BB)
       {
-         errs()<<BB->getName()<<"-----\n";
+         DEBUG(errs()<<BB->getName()<<"-----\n");
          auto Term = BB->getTerminator();
          if(isa<BranchInst>(Term)||isa<SwitchInst>(Term))
          {
@@ -250,9 +257,9 @@ bool IRSlicer::runOnModule(Module &M){
          }
       }
    }
-   errs()<<this->Live.size()<<"\n";
+   DEBUG(errs()<<this->Live.size()<<"\n");
    interFunction(M.getFunction("main"),false);
-   errs()<<this->Live.size()<<"\n";
+   DEBUG(errs()<<this->Live.size()<<"\n");
    deleteIns(M);
    deleteNoUsedFunc(M);
    return false;
