@@ -73,7 +73,7 @@ namespace lle{
       //Set domain = definitions in the function
       std::vector<Value*> domain;
       for (Function::arg_iterator arg = F.arg_begin(); arg != F.arg_end(); ++arg)
-         domain.push_back(arg);
+         domain.push_back(&*arg);
       for (inst_iterator instruction = inst_begin(F), e = inst_end(F); instruction != e; ++instruction) {
          //If instruction is nonempty when converted to a definition string, then it's a definition and belongs in our domain
          if (!valueToDefinitionStr(&*instruction).empty())
@@ -110,10 +110,10 @@ namespace lle{
       //Now, use dataflow results to output reaching definitions at program points within each block
       for (Function::iterator basicBlock = F.begin(); basicBlock != F.end(); ++basicBlock) {
 
-         DataFlowResultForBlock blockReachingDefVals = dataFlowResult.resultsByBlock[basicBlock];
+         DataFlowResultForBlock blockReachingDefVals = dataFlowResult.resultsByBlock[&*basicBlock];
 
          //Print just the header line of the block (in a hacky way... blocks start w/ newline, so look for first occurrence of newline beyond first char
-         std::string basicBlockStr = valueToStr(basicBlock);
+         std::string basicBlockStr = valueToStr(&*basicBlock);
          DEBUG(errs() << basicBlockStr.substr(0, basicBlockStr.find(':', 1) + 1) << "\n");
 
          //Initialize reaching definitions at the start of the block
@@ -125,7 +125,7 @@ namespace lle{
          BasicBlock::iterator instruction = basicBlock->begin();
          std::set<Value*> InsRes; //add by haomeng
          getReachDef(domain, reachingDefVals, InsRes);
-         this->InsReach[instruction] = InsRes;
+         this->InsReach[&*instruction] = InsRes;
 
          for (instruction = basicBlock->begin(); instruction != basicBlock->end(); ++instruction) {
             std::set<Value*> InsRes; //add by haomeng
@@ -133,7 +133,7 @@ namespace lle{
 
             DenseMap<Value*, int>::const_iterator defIter;
 
-            std::string currDefStr = valueToDefinitionVarStr(instruction);
+            std::string currDefStr = valueToDefinitionVarStr(&*instruction);
 
             for (defIter = dataFlowResult.domainEntryToValueIdx.begin(); defIter != dataFlowResult.domainEntryToValueIdx.end(); ++defIter) {
                std::string prevDefStr = valueToDefinitionVarStr(defIter->first);
@@ -152,7 +152,7 @@ namespace lle{
                if(instruction != basicBlock->end())
                {
                   getReachDef(domain, reachingDefVals, InsRes);
-                  this->InsReach[instruction] = InsRes;
+                  this->InsReach[&*instruction] = InsRes;
                   DEBUG(errs()<<*instruction<<"\t"<<InsRes.size()<<"================================================================\n");
                }
                instruction--;

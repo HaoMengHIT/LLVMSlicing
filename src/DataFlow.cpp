@@ -143,7 +143,7 @@ DataFlowResult DataFlow::run(Function& F,
       //Pre-"exit" blocks = those that have a return statement
       for(Function::iterator I = F.begin(), E = F.end(); I != E; ++I)
         if (isa<ReturnInst>(I->getTerminator()))
-          boundaryBlocks.insert(I);
+          boundaryBlocks.insert(&*I);
       break;
   }
   for (std::set<BasicBlock*>::iterator boundaryBlock = boundaryBlocks.begin(); boundaryBlock != boundaryBlocks.end(); boundaryBlock++) {
@@ -162,7 +162,7 @@ DataFlowResult DataFlow::run(Function& F,
       BitVector* interiorInitVal = (direction == FORWARD) ? &interiorInitResult.out : &interiorInitResult.in;
       *interiorInitVal = initInteriorCond;
       interiorInitResult.currTransferResult.baseValue = initInteriorCond;
-      resultsByBlock[basicBlock] = interiorInitResult;
+      resultsByBlock[&*basicBlock] = interiorInitResult;
     }
   }
 
@@ -173,16 +173,16 @@ DataFlowResult DataFlow::run(Function& F,
       std::vector<BasicBlock*> analysisPreds;
       switch (direction) {
         case FORWARD:
-          for (pred_iterator predBlock = pred_begin(basicBlock), E = pred_end(basicBlock); predBlock != E; ++predBlock)
+          for (pred_iterator predBlock = pred_begin(&*basicBlock), E = pred_end(&*basicBlock); predBlock != E; ++predBlock)
             analysisPreds.push_back(*predBlock);
           break;
         case BACKWARD:
-          for (succ_iterator succBlock = succ_begin(basicBlock), E = succ_end(basicBlock); succBlock != E; ++succBlock)
+          for (succ_iterator succBlock = succ_begin(&*basicBlock), E = succ_end(&*basicBlock); succBlock != E; ++succBlock)
             analysisPreds.push_back(*succBlock);
           break;
       }
 
-      analysisPredsByBlock[basicBlock] = analysisPreds;
+      analysisPredsByBlock[&*basicBlock] = analysisPreds;
   }
 
   //Iterate over blocks in function until convergence of output sets for all blocks
@@ -192,7 +192,7 @@ DataFlowResult DataFlow::run(Function& F,
     //TODO: if analysis is backwards, may want instead to iterate from back-to-front of blocks list
 
     for (Function::iterator basicBlock = F.begin(); basicBlock != F.end(); ++basicBlock) {
-      DataFlowResultForBlock& blockVals = resultsByBlock[basicBlock];
+      DataFlowResultForBlock& blockVals = resultsByBlock[&*basicBlock];
 
       //Store old output before applying this analysis pass to the block (depends on analysis dir)
       DataFlowResultForBlock oldBlockVals = blockVals;
@@ -200,7 +200,7 @@ DataFlowResult DataFlow::run(Function& F,
 
       //If any analysis predecessors have outputs ready, apply meet operator to generate updated input set for this block
       BitVector* passInPtr = (direction == FORWARD) ? &blockVals.in : &blockVals.out;
-      std::vector<BasicBlock*> analysisPreds = analysisPredsByBlock[basicBlock];
+      std::vector<BasicBlock*> analysisPreds = analysisPredsByBlock[&*basicBlock];
       std::vector<BitVector> meetInputs;
       //Iterate over analysis predecessors in order to generate meet inputs for this block
       for (std::vector<BasicBlock*>::iterator analysisPred = analysisPreds.begin(); analysisPred < analysisPreds.end(); ++analysisPred) {
@@ -209,7 +209,7 @@ DataFlowResult DataFlow::run(Function& F,
         BitVector meetInput = predVals.currTransferResult.baseValue;
 
         //If this pred matches a predecessor-specific value for the current block, union that value into value set
-        DenseMap<BasicBlock*, BitVector>::iterator predSpecificValueEntry = predVals.currTransferResult.predSpecificValues.find(basicBlock);
+        DenseMap<BasicBlock*, BitVector>::iterator predSpecificValueEntry = predVals.currTransferResult.predSpecificValues.find(&*basicBlock);
         if (predSpecificValueEntry != predVals.currTransferResult.predSpecificValues.end()) {
 //            errs() << "Pred-specific meet input from " << (*analysisPred)->getName() << ": " <<bitVectorToStr(predSpecificValueEntry->second) << "\n";
             meetInput |= predSpecificValueEntry->second;
@@ -221,7 +221,7 @@ DataFlowResult DataFlow::run(Function& F,
         *passInPtr = applyMeet(meetInputs);
 
       //Apply transfer function to input set in order to get output set for this iteration
-      blockVals.currTransferResult = applyTransfer(*passInPtr, domainEntryToValueIdx, basicBlock);
+      blockVals.currTransferResult = applyTransfer(*passInPtr, domainEntryToValueIdx, &*basicBlock);
       BitVector* passOutPtr = (direction == FORWARD) ? &blockVals.out : &blockVals.in;
       *passOutPtr = blockVals.currTransferResult.baseValue;
 
@@ -258,7 +258,7 @@ void DataFlow::PrintInstructionOps(raw_ostream& O, const Instruction* I) {
 
 void DataFlow::ExampleFunctionPrinter(raw_ostream& O, const Function& F) {
   for (Function::const_iterator FI = F.begin(), FE = F.end(); FI != FE; ++FI) {
-    const BasicBlock* block = FI;
+    const BasicBlock* block = &*FI;
     O << block->getName() << ":\n";
     const Value* blockValue = block;
     PrintInstructionOps(O, NULL);
