@@ -4,6 +4,9 @@
 #include <llvm/IR/IntrinsicInst.h>
 #include <llvm/IR/Dominators.h>
 #include <llvm/IR/Operator.h>
+#include <llvm/Transforms/IPO/GlobalDCE.h>
+#include <llvm/Transforms/IPO.h>
+#include <llvm/IR/InstIterator.h>
 
 char IRSlicer::ID = 0;
 static RegisterPass<IRSlicer> X("IRSlicer","LLVM IR Slicing Pass", false, false);
@@ -41,6 +44,7 @@ Value* castoff(Value* v)
  *       ...
  *       br BB2
  */
+
 void IRSlicer::getReachDefStoreIns(Instruction* I, std::set<Value*>& storeInsSet)
 {
    std::set<Value*>& reachTmp = this->RDef.InsReach[I];
@@ -90,7 +94,6 @@ void IRSlicer::findLives(Instruction* I)
          Value* v = i->get();
          if(isa<GlobalVariable>(v)||isa<GEPOperator>(v))
          {
-            errs() << "-----" << *v << "\n"; 
             for(Value::use_iterator j = v->use_begin(), je = v->use_end();j!=je;)
             {
                Use* U = &*j;
@@ -152,17 +155,18 @@ bool IRSlicer::addInsToLive(Instruction* I)
 void IRSlicer::deleteIns(Module &M)
 {
    vector<Instruction*> worklist; 
-   for(auto FB=M.begin(),FE=M.end();FB!=FE;++FB)
+   for(auto FB=M.begin(),FE=M.end();FB!=FE;++FB){
       for(auto BB=FB->begin(),BE=FB->end();BB!=BE;++BB)
          for(auto IB=BB->begin(),IE=BB->end();IB!=IE;++IB)
          {
             Instruction* I = dyn_cast<Instruction>(IB);
             worklist.push_back(I);
          }
+   }
    for(int i = worklist.size()-1;i>=0;i--)
    {
       Instruction* I = worklist[i];
-      if(this->Live.find(I) == this->Live.end())
+      if(this->Live.find(I) == this->Live.end() && !isa<ReturnInst>(I))
       {
          DEBUG(errs()<<"Deleting instruction "<<*I<<"......\n");
          for(User* user:I->users())
@@ -170,6 +174,7 @@ void IRSlicer::deleteIns(Module &M)
             Instruction* userIns = dyn_cast<Instruction>(user);
             DEBUG(errs()<<*userIns<<"\n");
          }
+         I->dropAllReferences();
          I->replaceAllUsesWith(UndefValue::get(I->getType()));
          I->eraseFromParent();
          //I->removeFromParent();
@@ -177,6 +182,11 @@ void IRSlicer::deleteIns(Module &M)
 
    }
    return;
+}
+bool RemoveUnusedGlobalValue(GlobalValue &GV) {
+   if (GV.use_empty()) return false;
+   GV.removeDeadConstantUsers();
+   return GV.use_empty();
 }
 /*
  * deleteNoUsedFunc:
@@ -187,15 +197,44 @@ void IRSlicer::deleteNoUsedFunc(Module &M)
    for(auto FB = M.begin(),FE = M.end();FB!=FE;)
    {  Function* F = &*FB;
       ++FB;
-         errs()<<"Deleting function "<<F->getName()<<"\n";
       //Contain Not declaration function and delete noused declaration function 
       //if(this->UsedFunc.find(F) == this->UsedFunc.end() && F->isDeclaration())
-      if(this->UsedFunc.find(F) == this->UsedFunc.end())
+      if(this->UsedFunc.find(F) == this->UsedFunc.end() && !F->isDeclaration())
       {
-         DEBUG(errs()<<"Deleting function "<<F->getName()<<"\n");
-         M.getFunctionList().erase(F);
+         for(auto IB = inst_begin(F), IE = inst_end(F); IB != IE;)
+         {
+            Instruction* I = &*IB;
+            ++IB;
+            if(!isa<ReturnInst>(I))
+            {
+               I->dropAllReferences();
+               I->replaceAllUsesWith(UndefValue::get(I->getType()));
+               I->eraseFromParent();
+            }
+         }
+      }
+      if(this->UsedFunc.find(F) == this->UsedFunc.end() && F->isDeclaration())
+      {
+            M.getFunctionList().erase(F);
+
       }
    }
+   for(auto FB = M.begin(),FE = M.end();FB!=FE;)
+   {  Function* F = &*FB;
+      ++FB;
+      //Contain Not declaration function and delete noused declaration function 
+      //if(this->UsedFunc.find(F) == this->UsedFunc.end() && F->isDeclaration())
+      if(this->UsedFunc.find(F) == this->UsedFunc.end() && !F->isDeclaration())
+      {
+         DEBUG(errs()<<"Deleting function "<<F->getName()<<"\n");
+         F->removeDeadConstantUsers();
+         if(F->use_empty())
+         {
+            //FB = M.getFunctionList().erase(F);
+         }
+      }
+   }
+
    return;
 }
 
@@ -210,20 +249,17 @@ void IRSlicer::interFunction(Function* FB, bool isRetUsed)
    this->UsedFunc.insert(FB);
    if(FB->isDeclaration()) return;
    DEBUG(errs()<<"Strat dealing functoin "<<FB->getName()<<"\n");     
-   errs()<<"Strat dealing functoin "<<FB->getName()<<"\n";     
    for(auto Ite = inst_begin(FB), E = inst_end(FB); Ite!=E;)
    {
       Instruction* ins = &*Ite;
       ++Ite;
       if(ReturnInst* RI = dyn_cast<ReturnInst>(ins))
       {
-         errs()<<*RI<<"-------------\n";
          if(isRetUsed == false)
          {
             Value* Ret = RI->getReturnValue(); 
             if(Ret != NULL)
             {
-            errs()<<*Ret<<"\n";
                ReturnInst* newRet = ReturnInst::Create(FB->getContext(), UndefValue::get(Ret->getType()));
                BasicBlock::iterator ii(RI);
                ReplaceInstWithInst(RI->getParent()->getInstList(),ii,newRet);
@@ -277,144 +313,18 @@ void IRSlicer::printUses(Instruction* I)
    //errs()<<us<<"\n";
 }
 
-bool std::less<BasicBlock>::operator()(BasicBlock* L, BasicBlock* R)
+void IRSlicer::findAllRelatedIns(Instruction* I)
 {
-   if(L == NULL || R == NULL) return false;
-   if(L->getParent() != R->getParent()) return false;
-   Function* F = L->getParent();
-   if(F==NULL) return false;
-   unsigned L_idx = std::distance(F->begin(), Function::iterator(L));
-   unsigned R_idx = std::distance(F->begin(), Function::iterator(R));
-   return L_idx < R_idx;
-}
-
-bool std::less<Instruction>::operator()(Instruction* L, Instruction* R)
-{
-   if(L == NULL || R == NULL) return false;
-   BasicBlock* L_B = L->getParent(), *R_B = R->getParent();
-   if(L_B != R_B) return std::less<BasicBlock>()(L_B, R_B);
-   if(L_B == NULL) return false;
-   unsigned L_idx = std::distance(L_B->begin(), BasicBlock::iterator(L));
-   unsigned R_idx = std::distance(R_B->begin(), BasicBlock::iterator(R));
-   return L_idx < R_idx;
-}
-
-static CallGraphNode* last_valid_child(CallGraphNode* N, set<Value*>& Only)
-{
-   using RIte = std::reverse_iterator<CallGraphNode::iterator>;
-   auto found = find_if(RIte(N->end()), RIte(N->begin()), [&Only](RIte::value_type& P){
-            auto F = P.second->getFunction();
-            return Only.count(P.first) && F != NULL && !F->isDeclaration();
-         });
-   if(found == RIte(N->begin())) return NULL;
-   else return found->second;
-}
-
-CGFilter::CGFilter(CallGraphNode* root_, Instruction* threshold_inst_): root(root_)
-{
-   using std::placeholders::_1;
-   unsigned LastPathLen = 0;
-   int i=-1; // for initial
-   for(auto N = df_begin(root), E = df_end(root); N!=E; ++N){
-      Function* F = N->getFunction();
-      if(F && !F->isDeclaration()){
-
-         if(N.getPathLength()>1){
-            // first we go through tree, only stores which we visited
-            CallGraphNode* Parent = N.getPath(N.getPathLength()-2);
-            CallGraphNode* Current = *N;
-            auto found = find_if(Parent->begin(), Parent->end(), [Current](CallGraphNode::iterator::value_type& V){
-                  return V.second == Current;
-                  });
-            Only.insert(&*found->first);
-         }
-
-         // we caculate [first
-         unsigned CurPathLen = N.getPathLength();
-         i += LastPathLen - CurPathLen + 2;
-         LastPathLen = CurPathLen;
-         order_map[F] = {(unsigned)i, 0, *N}; // a function only store minimal idx
+   if(addInsToLive(I)) findLives(I);
+   for(User* U:I->users())
+   {
+      if(Instruction* II = dyn_cast<Instruction>(U))
+      {
+         addInsToLive(II);
       }
    }
-   // we caculate last)
-   for(auto N = po_begin(root), E = po_end(root); N!=E; ++N){
-      Function* F = N->getFunction();
-      if(F==NULL || F->isDeclaration()) continue;
 
-      Record& r = order_map[F];
-      auto Clast = last_valid_child(*N, Only);
-      if(N->empty() || Clast == NULL) r.last = r.first + 1;
-      else r.last = order_map[Clast->getFunction()].last + 1;
-   }
-   threshold = 0;
-   threshold_inst = NULL;
-   threshold_f = NULL;
-   update(threshold_inst_);
-}
 
-unsigned CGFilter::indexof(llvm::Instruction *I)
-{
-   Function* ParentF = I->getParent()->getParent();
-   CallGraphNode* Parent = order_map[ParentF].second;
-   // this function doesn't in call graph
-   if(Parent==NULL) return UINT_MAX;
-   if(Parent->empty()) return order_map[ParentF].first;
-
-   Function* Fmatch = NULL;
-   for(auto t = Parent->begin(), e = Parent->end(); t!=e; ++t){
-      Function* F = t->second->getFunction();
-      if(F==NULL || F->isDeclaration()) continue;
-      if(t->first == NULL || Only.count(t->first)==0) continue;
-      Instruction* call_inst = dyn_cast<Instruction>(&*t->first);
-      // last call_inst < threshold_inst < next call_inst
-      // then threshold should equal to last call_inst's order
-      if(I == call_inst || std::less<Instruction>()(I, call_inst)){
-         Fmatch = F;
-         break;
-      }
-   }
-   if(Fmatch == NULL)
-      return order_map[ParentF].last - 1;
-   else
-      return order_map[Fmatch].first - 1;
-}
-void CGFilter::update(Instruction* threshold_inst_)
-{
-   if(threshold_inst_==NULL) return;
-   threshold_inst = threshold_inst_;
-   threshold_f = threshold_inst->getParent()->getParent();
-   threshold = indexof(threshold_inst);
-}
-bool CGFilter::operator()(Use* U)
-{
-   Instruction* I = dyn_cast<Instruction>(U->getUser());
-   if(I==NULL) return false;
-   BasicBlock* B = I->getParent();
-   if(B==NULL) return false;
-   Function* F = B->getParent();
-   if(F==NULL) return false;
-
-   // quick lookup:
-   // it's index > it's function's index > threshold
-   unsigned order = order_map[F].first;
-   if(order > threshold) return false;
-
-   order = indexof(I);
-   if(order == UINT_MAX) return true;
-   if(order == threshold){
-      AssertRuntime(threshold_f == F, "should be same function "<<order<<":"<<threshold);
-      return std::less_equal<Instruction>()(I, threshold_inst);
-   }
-   return order < threshold;
-}
-bool CGFilter::judgeIns(llvm::Instruction* I, llvm::Instruction* J)
-{
-   unsigned indexI = indexof(I);
-   unsigned indexJ = indexof(J);
-   if(indexI == indexJ)
-      return std::less<Instruction>()(I,J);
-   else
-      return indexI < indexJ;
 }
 
 bool IRSlicer::runOnModule(Module &M){
@@ -432,7 +342,6 @@ bool IRSlicer::runOnModule(Module &M){
    {
       if(FB->isDeclaration()) continue;
       DEBUG(errs()<<FB->getName()<<"==========================================\n");
-      errs()<<FB->getName()<<"==========================================\n";
       for(auto BB=FB->begin(),BE=FB->end();BB!=BE;++BB)
       {
          DEBUG(errs()<<BB->getName()<<"-----\n");
@@ -454,17 +363,50 @@ bool IRSlicer::runOnModule(Module &M){
                   if(addInsToLive(CI)) findLives(CI);
                   else continue;
                }
+               //Handle fopen function
+               else if(callee->getName().startswith("fopen"))
+               {
+                  findAllRelatedIns(CI);
+               }
             }
 
          }
       }
    }
-   errs()<<"Hello world\n";
+/////////
+   
+   for(auto FB = M.begin(), FE = M.end();FB!=FE;++FB)
+   {
+      Function* F = &*FB;
+      for(auto& B:*F)
+         for(auto& I:B)
+         {
+            if(CallInst* call_inst = dyn_cast<CallInst>(&I))
+            {
+               Function* fn = call_inst->getCalledFunction();
+               StringRef fn_name = fn->getName();
+               errs()<<fn_name<<": =================\n";
+               for(int i = 0;i<call_inst->getNumArgOperands();i++)
+               {
+                  errs()<<*(call_inst->getArgOperand(i))<<"----\n";
+               }
+               for (auto arg = fn->arg_begin(); arg != fn->arg_end(); ++arg)
+               {
+                  errs()<<*arg<<"====\n";
+
+               }
+            }
+         }
+   }
+/////////
+
+
    DEBUG(errs()<<this->Live.size()<<"\n");
    interFunction(M.getFunction("main"),false);
    DEBUG(errs()<<this->Live.size()<<"\n");
    deleteIns(M);
-   errs()<<"Function Over!\n";
-   deleteNoUsedFunc(M);
+   GDce = new GlobalVarDCE();
+   GDce->runOnModule(M);
+   //deleteNoUsedFunc(M);
    return false;
 }
