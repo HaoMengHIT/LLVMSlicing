@@ -6,6 +6,7 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/IR/InstIterator.h>
 #include <llvm/IR/Operator.h>
+#include <llvm/Analysis/AliasAnalysis.h>
 #include <set>
 #include <vector>
 #include <iostream>
@@ -23,38 +24,6 @@ namespace{
 }
 char Test::ID = 0;
 static RegisterPass<Test> X("Test","My Test",false,false);
-//bool Test::runOnModule(Module &M){
-//   int IRCount = 0;
-//   for(auto FB=M.begin(),FE=M.end();FB!=FE;++FB)
-//   {
-//      for(auto BB=FB->begin(),BE=FB->end();BB!=BE;++BB)
-//      {
-//         for(auto IB=BB->begin(),IE=BB->end();IB!=IE;++IB)
-//         {
-//            IRCount++;
-//            if(LoadInst* LI = dyn_cast<LoadInst>(IB))
-//            {
-//               errs()<<"=======\t"<<*LI<<"\n";
-//               for(Use& U:LI->operands())
-//               {
-//                  Use* next = &U;
-//                  do
-//                  {
-//                     auto V = next->getUser();
-//                     Instruction* ins = dyn_cast<Instruction>(V);
-//                     errs()<<*ins<<"\n";
-//                  }
-//                  while((next = next->getNext()));
-//               }
-//            }
-//
-//         }
-//      }
-//   }
-//   errs()<<">>>>>>>>>>>>> Instruction Count: "<<IRCount<<"\n";
-//   return false;
-
-
 bool isRefGlobal(Value* V, GlobalVariable** pGV, Use** pGEP)
 {
    Use* U = NULL;
