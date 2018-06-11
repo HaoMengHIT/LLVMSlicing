@@ -53,6 +53,7 @@ CGFilter::CGFilter(CallGraphNode* root_, Instruction* threshold_inst_): root(roo
       Function* F = N->getFunction();
       if(F && !F->isDeclaration()){
 
+      errs()<<F->getName()<<"\n";
          if(N.getPathLength()>1){
             // first we go through tree, only stores which we visited
             CallGraphNode* Parent = N.getPath(N.getPathLength()-2);

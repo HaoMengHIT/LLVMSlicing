@@ -249,13 +249,17 @@ void IRSlicer::interFunction(Function* FB, bool isRetUsed)
    this->UsedFunc.insert(FB);
    if(FB->isDeclaration()) return;
    DEBUG(errs()<<"Strat dealing functoin "<<FB->getName()<<"\n");     
+   errs()<<"Strat dealing functoin "<<FB->getName()<<"\n";     
    for(auto Ite = inst_begin(FB), E = inst_end(FB); Ite!=E;)
    {
       Instruction* ins = &*Ite;
       ++Ite;
       if(ReturnInst* RI = dyn_cast<ReturnInst>(ins))
       {
-         if(isRetUsed == false)
+         //handle ret void
+         if(RI->getNumOperands() == 0)
+            continue;
+         else if(isRetUsed == false)
          {
             Value* Ret = RI->getReturnValue(); 
             if(Ret != NULL)
@@ -368,8 +372,27 @@ bool IRSlicer::runOnModule(Module &M){
                {
                   findAllRelatedIns(CI);
                }
+               else if(callee->getName().startswith("fscanf"))
+               {
+                  if(addInsToLive(CI)) findLives(CI);
+                  else continue;
+               }
+               else if(callee->getName().startswith("fclose"))
+               {
+                  if(addInsToLive(CI)) findLives(CI);
+                  else continue;
+               }
+               else if(callee->getName().startswith("__kmpc"))
+               {
+                  if(addInsToLive(CI)) findLives(CI);
+                  else continue;
+               }
+               else if(callee->getName().startswith(".omp_"))
+               {
+                  if(addInsToLive(CI)) findLives(CI);
+                  else continue;
+               }
             }
-
          }
       }
    }
@@ -385,14 +408,14 @@ bool IRSlicer::runOnModule(Module &M){
             {
                Function* fn = call_inst->getCalledFunction();
                StringRef fn_name = fn->getName();
-               errs()<<fn_name<<": =================\n";
+               //errs()<<fn_name<<": =================\n";
                for(int i = 0;i<call_inst->getNumArgOperands();i++)
                {
-                  errs()<<*(call_inst->getArgOperand(i))<<"----\n";
+                 // errs()<<*(call_inst->getArgOperand(i))<<"----\n";
                }
                for (auto arg = fn->arg_begin(); arg != fn->arg_end(); ++arg)
                {
-                  errs()<<*arg<<"====\n";
+                  //errs()<<*arg<<"====\n";
 
                }
             }
@@ -407,6 +430,7 @@ bool IRSlicer::runOnModule(Module &M){
    deleteIns(M);
    GDce = new GlobalVarDCE();
    GDce->runOnModule(M);
+   errs()<<"Hello world\n";
    //deleteNoUsedFunc(M);
    return false;
 }
