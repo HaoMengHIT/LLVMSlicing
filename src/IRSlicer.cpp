@@ -14,7 +14,9 @@ static RegisterPass<IRSlicer> X("IRSlicer","LLVM IR Slicing Pass", false, false)
 Value* castoff(Value* v)
 {
    if(ConstantExpr* CE = dyn_cast<ConstantExpr>(v))
+   {
       v = CE->getAsInstruction();
+   }
 
    if(CastInst* CI = dyn_cast<CastInst>(v)){
       return castoff(CI->getOperand(0));
@@ -125,6 +127,18 @@ void IRSlicer::findLives(Instruction* I)
             if(addInsToLive(si)) findLives(si);
          }
 
+
+      }
+      else if(isa<AllocaInst>(V))
+      {
+         std::set<Value*> reachStore;
+         //Apply reaching-definition method to get all store instructions before current load instruction.
+         getReachDefStoreIns(I, reachStore);
+         for(auto tmp:reachStore)
+         {
+            Instruction* si = dyn_cast<Instruction>(&*tmp);
+            if(addInsToLive(si)) findLives(si);
+         }
 
       }
       if(isa<Instruction>(V))
@@ -246,10 +260,10 @@ void IRSlicer::deleteNoUsedFunc(Module &M)
  */
 void IRSlicer::interFunction(Function* FB, bool isRetUsed)
 {
+   errs()<<"Strat dealing functoin "<<FB->getName()<<"\n";     
    this->UsedFunc.insert(FB);
    if(FB->isDeclaration()) return;
    DEBUG(errs()<<"Strat dealing functoin "<<FB->getName()<<"\n");     
-   errs()<<"Strat dealing functoin "<<FB->getName()<<"\n";     
    for(auto Ite = inst_begin(FB), E = inst_end(FB); Ite!=E;)
    {
       Instruction* ins = &*Ite;
@@ -258,7 +272,11 @@ void IRSlicer::interFunction(Function* FB, bool isRetUsed)
       {
          //handle ret void
          if(RI->getNumOperands() == 0)
+	 {
+            errs()<<*RI<<"\n";
+            addInsToLive(RI);
             continue;
+	 }
          else if(isRetUsed == false)
          {
             Value* Ret = RI->getReturnValue(); 
@@ -288,6 +306,61 @@ void IRSlicer::interFunction(Function* FB, bool isRetUsed)
       {
          Function* callee = CI->getCalledFunction();
          bool isUsed = false;
+	 if(callee->getName().startswith("__kmpc_fork_call"))
+	 {
+		 errs()<<callee->getName()<<"----------------------------\n";
+		 for(Use& U:CI->operands())
+		 {
+		    Value* V = U.get();
+		    auto Test = V->stripPointerCasts();
+		    if(Function* kmpcCall = dyn_cast<Function>(Test))
+		    {
+		        if(kmpcCall->getName().startswith(".omp_"))
+			{
+			   errs()<<kmpcCall->getName()<<"\n";
+                  	   interFunction(kmpcCall,isUsed);
+			}
+		    }
+		 }
+	 }
+         for(User* U:CI->users())
+         {
+            if(Instruction* I = dyn_cast<Instruction>(U))
+            {
+               if(this->Live.find(I) != this->Live.end())
+               {
+                  isUsed = true;
+                  interFunction(callee,isUsed);
+                  break;
+               }
+            }
+         }
+         if(!isUsed)
+         {
+            interFunction(callee,isUsed);
+         }
+      }
+      if(InvokeInst* CI = dyn_cast<InvokeInst>(ins))
+      {
+         Function* callee = CI->getCalledFunction();
+         bool isUsed = false;
+	 if(callee->getName().startswith("__kmpc_fork_call"))
+	 {
+		 errs()<<callee->getName()<<"----------------------------\n";
+		 for(Use& U:CI->operands())
+		 {
+		    Value* V = U.get();
+		    auto Test = V->stripPointerCasts();
+		    if(Function* kmpcCall = dyn_cast<Function>(Test))
+		    {
+		        if(kmpcCall->getName().startswith(".omp_"))
+			{
+			   errs()<<kmpcCall->getName()<<"\n";
+                  	   interFunction(kmpcCall,isUsed);
+			}
+		    }
+		 }
+	 }
          for(User* U:CI->users())
          {
             if(Instruction* I = dyn_cast<Instruction>(U))
@@ -346,11 +419,20 @@ bool IRSlicer::runOnModule(Module &M){
    {
       if(FB->isDeclaration()) continue;
       DEBUG(errs()<<FB->getName()<<"==========================================\n");
+      if(FB->getName().startswith(".omp_task_"))
+      {
+         for(auto IB = inst_begin(&*FB), IE = inst_end(&*FB); IB != IE;)
+	 {
+            Instruction* I = &*IB;
+            ++IB;
+            if(addInsToLive(I)) findLives(I);
+	 }
+      }
       for(auto BB=FB->begin(),BE=FB->end();BB!=BE;++BB)
       {
          DEBUG(errs()<<BB->getName()<<"-----\n");
          auto Term = BB->getTerminator();
-         if(isa<BranchInst>(Term)||isa<SwitchInst>(Term))
+         if(isa<BranchInst>(Term)||isa<SwitchInst>(Term)||isa<UnreachableInst>(Term))
          {
             Instruction* TI = dyn_cast<Instruction>(Term);
             if(addInsToLive(TI)) findLives(TI);
@@ -358,9 +440,44 @@ bool IRSlicer::runOnModule(Module &M){
          }
          for(auto IB=BB->begin(),IE=BB->end();IB!=IE;++IB)
          {
-            printUses(&*IB);
-            if(CallInst* CI = dyn_cast<CallInst>(IB))
+            if(CallInst* CI = dyn_cast<CallInst>(&*IB))
             {
+               Function* callee = CI->getCalledFunction();
+               if(!(callee->isDeclaration()))
+               {
+                  if(addInsToLive(CI)) findLives(CI);
+                  else continue;
+               }
+               //Handle fopen function
+               else if(callee->getName().startswith("fopen"))
+               {
+                  findAllRelatedIns(CI);
+               }
+               else if(callee->getName().startswith("fscanf"))
+               {
+                  if(addInsToLive(CI)) findLives(CI);
+                  else continue;
+               }
+               else if(callee->getName().startswith("fclose"))
+               {
+                  if(addInsToLive(CI)) findLives(CI);
+                  else continue;
+               }
+               else if(callee->getName().startswith("__kmpc"))
+               {
+                  if(addInsToLive(CI)) findLives(CI);
+                  else continue;
+               }
+               else if(callee->getName().startswith(".omp_"))
+               {
+                  if(addInsToLive(CI)) findLives(CI);
+                  else continue;
+               }
+            }
+	    else if(isa<InvokeInst>(&*IB))
+            {
+   errs()<<"Hello world\n";
+   	       InvokeInst* CI = dyn_cast<InvokeInst>(IB);
                Function* callee = CI->getCalledFunction();
                if(!(callee->isDeclaration()))
                {
@@ -396,32 +513,6 @@ bool IRSlicer::runOnModule(Module &M){
          }
       }
    }
-/////////
-   
-   for(auto FB = M.begin(), FE = M.end();FB!=FE;++FB)
-   {
-      Function* F = &*FB;
-      for(auto& B:*F)
-         for(auto& I:B)
-         {
-            if(CallInst* call_inst = dyn_cast<CallInst>(&I))
-            {
-               Function* fn = call_inst->getCalledFunction();
-               StringRef fn_name = fn->getName();
-               //errs()<<fn_name<<": =================\n";
-               for(int i = 0;i<call_inst->getNumArgOperands();i++)
-               {
-                 // errs()<<*(call_inst->getArgOperand(i))<<"----\n";
-               }
-               for (auto arg = fn->arg_begin(); arg != fn->arg_end(); ++arg)
-               {
-                  //errs()<<*arg<<"====\n";
-
-               }
-            }
-         }
-   }
-/////////
 
 
    DEBUG(errs()<<this->Live.size()<<"\n");

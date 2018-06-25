@@ -1,9 +1,7 @@
-#include <iostream>  
 #include <omp.h> // OpenMP编程需要包含的头文件
 #include <time.h>
 #include <stdlib.h>
 
-using namespace std;
 
 #define MatrixOrder 1024
 #define FactorIntToDouble 1.1; //使用rand（）函数产生int型随机数，将其乘以因子转化为double型；
@@ -60,7 +58,7 @@ int main()
     clock_t t1 = clock(); //开始计时；
     matrixMulti();
     clock_t t2 = clock(); //结束计时
-    cout<<"time: "<<t2-t1<<endl; 
+    printf("Time: %lld\n",t2-t1); 
     
 
     return 0;  

@@ -157,7 +157,7 @@ DataFlowResult DataFlow::run(Function& F,
 
   //Set initial vals for interior blocks (either OUTs for fwd analysis or INs for bwd analysis)
   for (Function::iterator basicBlock = F.begin(); basicBlock != F.end(); ++basicBlock) {
-    if (boundaryBlocks.find((BasicBlock*)basicBlock) == boundaryBlocks.end()) {
+    if (boundaryBlocks.find(dyn_cast<BasicBlock>(basicBlock)) == boundaryBlocks.end()) {
       DataFlowResultForBlock interiorInitResult = DataFlowResultForBlock();
       BitVector* interiorInitVal = (direction == FORWARD) ? &interiorInitResult.out : &interiorInitResult.in;
       *interiorInitVal = initInteriorCond;
