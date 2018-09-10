@@ -45,7 +45,7 @@
 #
 if(NOT DEFINED LLVM_RECOMMEND_VERSION)
    set(LLVM_RECOMMEND_VERSION "" CACHE STRING "Switch the llvm version")
-   set_property(CACHE LLVM_RECOMMEND_VERSION PROPERTY STRINGS "" "3.4" "3.5" "3.9")
+   set_property(CACHE LLVM_RECOMMEND_VERSION PROPERTY STRINGS "" "3.4" "3.5" "3.9" "4.0" "6.0")
 endif()
 
 

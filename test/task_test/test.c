@@ -5,8 +5,8 @@
 void task(int p)  
 {  
 	int sum = 0;
-	for(int i = 0;i<p;i++)
-		sum+=sqrt(i);
+	for(int i = 1;i<p*100000000;i++)
+		sum*=sqrt(i);
     printf("task, Thread ID: %d, task: %d\n", omp_get_thread_num(), sum);  
 }  
   

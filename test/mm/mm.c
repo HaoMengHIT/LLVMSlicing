@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 
-#define MatrixOrder 1024
+#define MatrixOrder 2048
 #define FactorIntToDouble 1.1; //使用rand（）函数产生int型随机数，将其乘以因子转化为double型；
 
 double firstParaMatrix [MatrixOrder] [MatrixOrder] = {0.0};  

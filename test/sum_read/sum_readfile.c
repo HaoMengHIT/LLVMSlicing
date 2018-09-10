@@ -14,7 +14,7 @@ void getsum(int start, int end)
    return;
 
 }
-void readFile(int& start, int& end)
+void readFile(int &start, int &end)
 {
    FILE *fp;
    fp = fopen("num.txt","r");

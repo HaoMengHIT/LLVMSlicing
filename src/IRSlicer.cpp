@@ -104,7 +104,7 @@ void IRSlicer::findLives(Instruction* I)
                Instruction* Itmp = dyn_cast<Instruction>(vj);
                if(isa<StoreInst>(Itmp) && CGF->judgeIns(Itmp, I))
                   if(addInsToLive(Itmp)) findLives(Itmp);
-                  //errs()<<*vj<<"\n";
+               //errs()<<*vj<<"\n";
             }
          }
       }
@@ -229,7 +229,7 @@ void IRSlicer::deleteNoUsedFunc(Module &M)
       }
       if(this->UsedFunc.find(F) == this->UsedFunc.end() && F->isDeclaration())
       {
-            M.getFunctionList().erase(F);
+         M.getFunctionList().erase(F);
 
       }
    }
@@ -272,11 +272,11 @@ void IRSlicer::interFunction(Function* FB, bool isRetUsed)
       {
          //handle ret void
          if(RI->getNumOperands() == 0)
-	 {
+         {
             errs()<<*RI<<"\n";
             addInsToLive(RI);
             continue;
-	 }
+         }
          else if(isRetUsed == false)
          {
             Value* Ret = RI->getReturnValue(); 
@@ -306,23 +306,23 @@ void IRSlicer::interFunction(Function* FB, bool isRetUsed)
       {
          Function* callee = CI->getCalledFunction();
          bool isUsed = false;
-	 if(callee->getName().startswith("__kmpc_fork_call"))
-	 {
-		 errs()<<callee->getName()<<"----------------------------\n";
-		 for(Use& U:CI->operands())
-		 {
-		    Value* V = U.get();
-		    auto Test = V->stripPointerCasts();
-		    if(Function* kmpcCall = dyn_cast<Function>(Test))
-		    {
-		        if(kmpcCall->getName().startswith(".omp_"))
-			{
-			   errs()<<kmpcCall->getName()<<"\n";
-                  	   interFunction(kmpcCall,isUsed);
-			}
-		    }
-		 }
-	 }
+         if(callee->getName().startswith("__kmpc_fork_call"))
+         {
+            errs()<<callee->getName()<<"----------------------------\n";
+            for(Use& U:CI->operands())
+            {
+               Value* V = U.get();
+               auto Test = V->stripPointerCasts();
+               if(Function* kmpcCall = dyn_cast<Function>(Test))
+               {
+                  if(kmpcCall->getName().startswith(".omp_"))
+                  {
+                     errs()<<kmpcCall->getName()<<"\n";
+                     interFunction(kmpcCall,isUsed);
+                  }
+               }
+            }
+         }
          for(User* U:CI->users())
          {
             if(Instruction* I = dyn_cast<Instruction>(U))
@@ -344,23 +344,23 @@ void IRSlicer::interFunction(Function* FB, bool isRetUsed)
       {
          Function* callee = CI->getCalledFunction();
          bool isUsed = false;
-	 if(callee->getName().startswith("__kmpc_fork_call"))
-	 {
-		 errs()<<callee->getName()<<"----------------------------\n";
-		 for(Use& U:CI->operands())
-		 {
-		    Value* V = U.get();
-		    auto Test = V->stripPointerCasts();
-		    if(Function* kmpcCall = dyn_cast<Function>(Test))
-		    {
-		        if(kmpcCall->getName().startswith(".omp_"))
-			{
-			   errs()<<kmpcCall->getName()<<"\n";
-                  	   interFunction(kmpcCall,isUsed);
-			}
-		    }
-		 }
-	 }
+         if(callee->getName().startswith("__kmpc_fork_call"))
+         {
+            errs()<<callee->getName()<<"----------------------------\n";
+            for(Use& U:CI->operands())
+            {
+               Value* V = U.get();
+               auto Test = V->stripPointerCasts();
+               if(Function* kmpcCall = dyn_cast<Function>(Test))
+               {
+                  if(kmpcCall->getName().startswith(".omp_"))
+                  {
+                     errs()<<kmpcCall->getName()<<"\n";
+                     interFunction(kmpcCall,isUsed);
+                  }
+               }
+            }
+         }
          for(User* U:CI->users())
          {
             if(Instruction* I = dyn_cast<Instruction>(U))
@@ -422,11 +422,11 @@ bool IRSlicer::runOnModule(Module &M){
       if(FB->getName().startswith(".omp_task_"))
       {
          for(auto IB = inst_begin(&*FB), IE = inst_end(&*FB); IB != IE;)
-	 {
+         {
             Instruction* I = &*IB;
             ++IB;
             if(addInsToLive(I)) findLives(I);
-	 }
+         }
       }
       for(auto BB=FB->begin(),BE=FB->end();BB!=BE;++BB)
       {
@@ -440,45 +440,37 @@ bool IRSlicer::runOnModule(Module &M){
          }
          for(auto IB=BB->begin(),IE=BB->end();IB!=IE;++IB)
          {
+            errs()<<*IB<<"===========\n";
             if(CallInst* CI = dyn_cast<CallInst>(&*IB))
             {
                Function* callee = CI->getCalledFunction();
+               //Handle the callee is NUll
+               if(!callee)
+                  continue;
+               auto callName = callee->getName();
                if(!(callee->isDeclaration()))
                {
                   if(addInsToLive(CI)) findLives(CI);
                   else continue;
                }
                //Handle fopen function
-               else if(callee->getName().startswith("fopen"))
+               else if(callName.startswith("fopen"))
                {
                   findAllRelatedIns(CI);
                }
-               else if(callee->getName().startswith("fscanf"))
-               {
-                  if(addInsToLive(CI)) findLives(CI);
-                  else continue;
-               }
-               else if(callee->getName().startswith("fclose"))
-               {
-                  if(addInsToLive(CI)) findLives(CI);
-                  else continue;
-               }
-               else if(callee->getName().startswith("__kmpc"))
-               {
-                  if(addInsToLive(CI)) findLives(CI);
-                  else continue;
-               }
-               else if(callee->getName().startswith(".omp_"))
+               else if(callName.startswith("fscanf")||callName.startswith("fclose") || callName.startswith("__kmpc") || callName.startswith(".omp_"))
                {
                   if(addInsToLive(CI)) findLives(CI);
                   else continue;
                }
             }
-	    else if(isa<InvokeInst>(&*IB))
+            if(isa<InvokeInst>(IB))
             {
-   errs()<<"Hello world\n";
-   	       InvokeInst* CI = dyn_cast<InvokeInst>(IB);
+               InvokeInst* CI = dyn_cast<InvokeInst>(IB);
                Function* callee = CI->getCalledFunction();
+               if(!callee)
+                  continue;
+               auto callName = callee->getName();
                if(!(callee->isDeclaration()))
                {
                   if(addInsToLive(CI)) findLives(CI);
@@ -489,22 +481,7 @@ bool IRSlicer::runOnModule(Module &M){
                {
                   findAllRelatedIns(CI);
                }
-               else if(callee->getName().startswith("fscanf"))
-               {
-                  if(addInsToLive(CI)) findLives(CI);
-                  else continue;
-               }
-               else if(callee->getName().startswith("fclose"))
-               {
-                  if(addInsToLive(CI)) findLives(CI);
-                  else continue;
-               }
-               else if(callee->getName().startswith("__kmpc"))
-               {
-                  if(addInsToLive(CI)) findLives(CI);
-                  else continue;
-               }
-               else if(callee->getName().startswith(".omp_"))
+               else if(callName.startswith("fscanf")||callName.startswith("fclose") || callName.startswith("__kmpc") || callName.startswith(".omp_"))
                {
                   if(addInsToLive(CI)) findLives(CI);
                   else continue;
