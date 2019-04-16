@@ -20,12 +20,20 @@ namespace{
       public:
          static char ID;
          BBInstrument():ModulePass(ID){}
+	 void WriteProfile(Module& M, GlobalVariable* CounterArray, unsigned numBlocks, Instruction* outputpos);
          void IncrementCounterInBlock(Module& M, Function::iterator BB, unsigned CounterNum, GlobalVariable* CounterArray);
          bool runOnModule(Module &M) override;
    };
 }
 char BBInstrument::ID = 0;
 static RegisterPass<BBInstrument> X("insert-openmp-profiling","OpenMP 程序的基本块插桩",false,false);
+
+void BBInstrument::WriteProfile(Module& M, GlobalVariable* CounterArray, unsigned numBlocks, Instruction* outputpos)
+{
+	IRBuilder<> Builder(outputpos);
+	return;
+}
+
 void BBInstrument::IncrementCounterInBlock(Module& M, Function::iterator BB,unsigned CounterNum, GlobalVariable* CounterArray)
 {
    Instruction* InsertPos = BB->getTerminator();
@@ -82,6 +90,19 @@ bool BBInstrument::runOnModule(Module &M) {
          this->IncrementCounterInBlock(M, BB, i++, Counters);
       }
    }
+
+   Instruction *outputpos=nullptr;
+   for (inst_iterator I = inst_begin(main), E = inst_end(main); I != E; ++I)
+   {
+	   if(isa<ReturnInst>(*I))
+	   {
+		   outputpos = &*I;
+		   errs()<<*outputpos<<"\n";
+		   WriteProfile(M, CounterArray, numBlocks, outputpos);
+	   }
+   }
+
+   
    return false; 
 
 }
