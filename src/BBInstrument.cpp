@@ -98,7 +98,7 @@ bool BBInstrument::runOnModule(Module &M) {
 	   {
 		   outputpos = &*I;
 		   errs()<<*outputpos<<"\n";
-		   WriteProfile(M, CounterArray, numBlocks, outputpos);
+		   WriteProfile(M, Counters, NumBlocks, outputpos);
 	   }
    }
 
