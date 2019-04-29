@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 
-#define MatrixOrder 2048
+#define MatrixOrder 1024
 #define FactorIntToDouble 1.1; //使用rand（）函数产生int型随机数，将其乘以因子转化为double型；
 
 double firstParaMatrix [MatrixOrder] [MatrixOrder] = {0.0};  
@@ -25,7 +25,7 @@ double calcuPartOfMatrixMulti(int row,int col)
 * * * * * * * * * * * * * * * * * * * * * * * * */
 void matrixInit()
 {
-    #pragma omp parallel for num_threads(64)
+    #pragma omp parallel for 
     for(int row = 0 ; row < MatrixOrder ; row++ ) {
         for(int col = 0 ; col < MatrixOrder ;col++){
             srand(row+col);
@@ -42,7 +42,7 @@ void matrixInit()
 void matrixMulti()
 {
 
-    #pragma omp parallel for num_threads(64)
+    #pragma omp parallel for 
     for(int row = 0 ; row < MatrixOrder ; row++){
         for(int col = 0; col < MatrixOrder ; col++){
             matrixMultiResult [row] [col] = calcuPartOfMatrixMulti (row,col);
