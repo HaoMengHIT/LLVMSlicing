@@ -65,7 +65,7 @@ $opt -load build/src/libLLVMSlicing.so -insert-openmp-profiling test_new.ll -o t
 5. Compile program.
 
 ```
-$clang test_inst.ll -o test 
+$clang -fopenmp test_inst.ll -o test 
 ```
 
 6. Run program and generate profile including basic block frequencies.
