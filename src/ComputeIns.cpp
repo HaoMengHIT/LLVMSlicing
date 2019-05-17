@@ -38,34 +38,29 @@ namespace{
 char ComputeIns::ID = 0 ;
 
 //regite pass
-static RegisterPass<ComputeIns> X("compute-BBnum","计算基本块频率和指令数",false,false);
+static RegisterPass<ComputeIns> X("compute-BBnum","compute basic block's number and instrument",false,false);
 
 void ComputeIns::getBBNum(Module &M){
-    int NumBlocks = 0;
-    for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
-        if (F->isDeclaration()) continue;
-        StringRef fname = F->getName();
-        if (fname.find("WriteOpenMPProfile")!=fname.npos) continue;
-        for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
-            int forkNum = 0;
-            for(BasicBlock::iterator IB = BB->begin(), IE = BB->end(); IB != IE; ++IB)
-            {
+    int number = 0;
+    for(auto FB = M.begin(),FE = M.end(); FB!=FE ; ++FB){
+        for(auto BB = FB->begin(), BE = FB->end(); BB!=BE ; ++BB){
+            number ++;
+            for(auto IB = BB->begin(), IE = BB->end(); IB!=IE ;++IB){
                 Instruction* ins = &*IB;
                 if(CallInst* CI = dyn_cast<CallInst>(ins))
                 {
                     Function* callee = CI->getCalledFunction();
                     if(callee->getName().startswith("__kmpc_fork_call"))
                     {
-                        forkNum++;
+                        number++;
                     }
 
                 }
             }
-            NumBlocks+=(forkNum+1);
         }
-
-        this->BBNum = NumBlocks;
     }
+
+    this->BBNum = number;
 }
 
 
@@ -101,14 +96,25 @@ void ComputeIns::getInsKind(Module &M){
     vector<int> bb;
     for(auto FB = M.begin(),FE = M.end(); FB!=FE ; ++FB){
         for(auto BB = FB->begin(), BE = FB->end(); BB!=BE ; ++BB){
-            //errs()<<*BB<<"\n";
+            errs()<<*BB<<"\n";
             for(auto IB = BB->begin(), IE = BB->end(); IB!=IE ; ++IB){
+                Instruction* ins = &*IB;
                 if(isa<LoadInst>(IB)){
                     loadNum++;
                 }else if(isa<StoreInst>(IB)){
                     storeNum++;
                 }else if(isa<llvm::BinaryOperator>(IB)){
                     boNum++;
+                }else if(CallInst* CI = dyn_cast<CallInst>(ins)){
+                    Function* callee = CI->getCalledFunction();
+                    if(callee->getName().startswith("__kmpc_fork_call")){
+                        bb.push_back(loadNum);
+                        bb.push_back(storeNum);
+                        bb.push_back(boNum);
+                        loadNum=0,storeNum=0,boNum=0;
+                        this->vec.push_back(bb);
+                        bb.clear();
+                    }
                 }else{
                     continue;
                 }
@@ -131,26 +137,40 @@ void ComputeIns::printInformation(){
     vector<int> BBLable_temp;
     vector<int>::iterator insInf;
 
-    int flag;
-    for(BBLable = this->vec.begin(); BBLable != this->vec.end(); BBLable++){
-        errs() << "BBLable is : \t" << i ;
-        BBLable_temp = *BBLable;
-        flag = 0;
-        for(insInf = BBLable_temp.begin(); insInf != BBLable_temp.end(); insInf++){
-            if(flag == 0){
-                errs()<<"\nload instructions' number is:\t" << *insInf;
-            }else if(flag == 1){
-                errs()<<"\nstore instructions' number is:\t" << *insInf;
-            }else if(flag == 2){
-                errs()<<"\nBinaryOperator instructions' number is:\t" << *insInf
-                    <<"\n" 
-                    <<"--------------------------------------------\n";
-            }else{
-                continue;
+    vector<vector<int>>::iterator ThreadLable;
+    vector<int> ThreadLable_temp;
+    vector<int>::iterator bbFreq;
+
+    int threadnum = 1;
+    for(ThreadLable = this->BBFreq.begin(); ThreadLable != this->BBFreq.end(); ThreadLable++){
+        errs() << "CoreNumber is : \t" << threadnum <<"\n";
+        errs() << "-----------------------------------------------------------\n";
+        ThreadLable_temp = *ThreadLable;
+        int flag;
+        i=0;
+        for(bbFreq = ThreadLable_temp.begin(),BBLable = this->vec.begin(); bbFreq != ThreadLable_temp.end(),BBLable != this->vec.end(); bbFreq++,BBLable++){
+            errs() << "CoreNumber : \t"<< threadnum <<"\tBBLable is : \t" << i ;
+            BBLable_temp = *BBLable;
+            flag = 0;
+            for(insInf = BBLable_temp.begin(); insInf != BBLable_temp.end(); insInf++){
+                if(flag == 0){
+                    errs()<<"\nload instructions' number is:\t" << *insInf * (*bbFreq);
+                }else if(flag == 1){
+                    errs()<<"\nstore instructions' number is:\t" << *insInf * (*bbFreq);
+                }else if(flag == 2){
+                    errs()<<"\nBinaryOperator instructions' number is:\t" << *insInf * (*bbFreq)
+                        <<"\n" 
+                        <<"--------------------------------------------\n";
+                }else{
+                    continue;
+                }
+                flag++;
             }
-            flag++;
+            i++;
+
         }
-        i++;
+        threadnum++;
+        errs() << "-----------------------------------------------------------\n";
 
     }
 }
@@ -179,6 +199,7 @@ bool ComputeIns::runOnModule(Module &M){
     this->printInformation();
     return true;
 }
+
 
 
 
