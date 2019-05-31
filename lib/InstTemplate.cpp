@@ -8,6 +8,7 @@
 #include "llvm/IR/SymbolTableListTraits.h"
 #include <llvm/IR/IRBuilder.h>
 #include <unordered_map>
+#include<bits/stdc++.h>
 #define Assert(a,b) // an empty Assert macro , because this code is copied from
                     // other project
 
