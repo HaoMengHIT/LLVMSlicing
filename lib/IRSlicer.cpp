@@ -114,6 +114,7 @@ void IRSlicer::findLives(Instruction* I)
    for(Use& U:I->operands())
    {
       Value* V = U.get();
+      errs()<<*V<<"-------------------\n";
 
       if(isa<Constant>(V)) continue;
       else if(isa<LoadInst>(I))
@@ -145,7 +146,7 @@ void IRSlicer::findLives(Instruction* I)
       {
          Instruction* VI = dyn_cast<Instruction>(V);
          if(addInsToLive(VI)) findLives(VI);
-         else return;
+        // else return;
       }
    }
 
@@ -460,8 +461,16 @@ bool IRSlicer::runOnModule(Module &M){
                }
                else if(callName.startswith("fscanf")||callName.startswith("fclose") || callName.startswith("__kmpc") || callName.startswith(".omp_"))
                {
-                  if(addInsToLive(CI)) findLives(CI);
-                  else continue;
+                  if(callName.startswith("__kmpc_for_static_init"))
+                  {
+                        errs()<<*CI<<"--------------------------------\n";
+                        if(addInsToLive(CI)) findLives(CI);
+                  }
+                  else
+                  {
+                        if(addInsToLive(CI)) findLives(CI);
+                        else continue;
+                  }
                }
             }
             if(isa<InvokeInst>(IB))
