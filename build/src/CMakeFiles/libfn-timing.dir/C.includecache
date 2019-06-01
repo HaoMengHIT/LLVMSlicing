@@ -1,0 +1,34 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/haomeng/Projects/LLVMSlicing/src/libfn-timing.c
+libtiming.c
+/home/haomeng/Projects/LLVMSlicing/src/libtiming.c
+math.h
+-
+sys/time.h
+-
+float.h
+-
+complex.h
+-
+
+/home/haomeng/Projects/LLVMSlicing/src/libtiming.c
+stdio.h
+-
+errno.h
+-
+stdlib.h
+-
+stdint.h
+-
+time.h
+-
+unistd.h
+-
+

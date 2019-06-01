@@ -1,0 +1,1 @@
+/usr/bin/cc   -rdynamic CMakeFiles/libfn-timing.dir/libfn-timing.c.o  -o libfn-timing  -L/usr/lib/llvm-6.0/lib -Wl,-rpath,/usr/lib/llvm-6.0/lib -lm 
