@@ -43,14 +43,13 @@ int main(int argc, char** argv) {
     for(j=0; j<size; ++j) {
       ofs = i*size*size + j*size;
       for(k=0; k<size; ++k) {
-	f[ofs+k] = phi[t1][ofs+k] = phi[t0][ofs+k] = rand()/(double)RAND_MAX;
+	f[ofs+k] = phi[t1][ofs+k] = phi[t0][ofs+k] = (double)i+(double)j;
       }
     }
   }	  
 
-  iter=1;
+  iter=100;
   runtime=0.0;
-  while(runtime<0.5) {
 
   // time measurement
   timing(&wct_start, &cput_start);
@@ -63,17 +62,12 @@ int main(int argc, char** argv) {
 		    &phi[t0][ofs+size*size],&phi[t0][ofs-size*size],&f[ofs],size);
       }
     }
-    dummy(phi[0],phi[1]);
-    t=t0; t0=t1; t1=t;
+//    dummy(phi[0],phi[1]);
   }	  
   
 
   timing(&wct_end, &cput_end);
   runtime = wct_end-wct_start;
-  iter *= 2;
-  }
-
-  iter /= 2;
 
   printf("size: %d  time: %lf  iter: %d  MLUP/s: %lf\n",size,runtime,iter,(double)iter*(size-2)*(size-2)*(size-2)/runtime/1000000.);
   

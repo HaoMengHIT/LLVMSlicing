@@ -2,12 +2,12 @@
 BHOME	=$(PWD)
 #
 F90	= ifort
-CC	= icc
+CC	= clang-6.0
 #
 #
-COMP	= -openmp
+COMP	= -fopenmp
 FOMP	= -openmp
-COPTS	=  -O3 -xHost -fno-inline -fno-alias
+COPTS	=  -O3
 FOPTS	=  -O3 -xHost -fno-inline
 FLONG	= 
 #
