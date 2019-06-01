@@ -21,10 +21,10 @@ include ../sys/make.common
 # applu.incl: npbparams.h
 
 ${PROGRAM}: config ${OBJS}
-	${CLINK} ${CLINKFLAGS} -o ${PROGRAM} ${OBJS} ${C_LIB}
+	${CLINK} ${CLINKFLAGS} ${OBJS} ${C_LIB} -lm -fopenmp -o ${PROGRAM} 
 
 lu.o:		lu.c applu.h npbparams.h
-	${CCOMPILE} lu.c
+	${CCOMPILE} lu.c -lm -fopenmp
 
 clean:
 	- /bin/rm -f npbparams.h

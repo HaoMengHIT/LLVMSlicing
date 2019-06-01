@@ -1,6 +1,7 @@
 SHELL=/bin/sh
 BENCHMARK=ep
 BENCHMARKU=EP
+LLVM_VER=6.0
 
 include ../config/make.def
 
@@ -10,7 +11,9 @@ OBJS = ep.o ${COMMON}/c_print_results.o ${COMMON}/c_${RAND}.o \
 include ../sys/make.common
 
 ${PROGRAM}: config ${OBJS}
-	${CLINK} ${CLINKFLAGS} -o ${PROGRAM} ${OBJS} ${C_LIB}
+	llvm-link-${LLVM_VER} ${OBJS} -o ${PROGRAM}.bc
+	llc-${LLVM_VER} -filetype=obj ${PROGRAM}.bc -o ${PROGRAM}.o
+	${CLINK} -fopenmp ${CLINKFLAGS} -o ${PROGRAM} ${PROGRAM}.o ${C_LIB} -lm
 
 
 ep.o:		ep.c npbparams.h

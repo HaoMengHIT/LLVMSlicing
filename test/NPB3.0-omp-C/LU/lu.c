@@ -88,6 +88,7 @@ static void verify(double xcr[5], double xce[5], double xci,
       program applu
 --------------------------------------------------------------------*/
 
+double timeStart, timeEnd;
 int main(int argc, char **argv) {
 
 /*--------------------------------------------------------------------
@@ -130,7 +131,11 @@ c   set the initial values for dependent variables
 /*--------------------------------------------------------------------
 c   compute the forcing term based on prescribed exact solution
 --------------------------------------------------------------------*/
+timeStart = omp_get_wtime();
   erhs();
+timeEnd = omp_get_wtime();
+
+printf("Omp 1 time: %lf\n",(timeEnd - timeStart));
   
 #pragma omp parallel
 {  
@@ -144,7 +149,10 @@ c   compute the forcing term based on prescribed exact solution
 /*--------------------------------------------------------------------
 c   perform the SSOR iterations
 --------------------------------------------------------------------*/
+timeStart = omp_get_wtime();
   ssor();
+timeEnd = omp_get_wtime();
+printf("Omp 2 time: %lf\n",(timeEnd - timeStart));
 
 /*--------------------------------------------------------------------
 c   compute the solution error
@@ -699,6 +707,7 @@ c   set up the start and end in i and j extents for all processors
 --------------------------------------------------------------------*/
 
 static void erhs(void) {
+
 
 #pragma omp parallel
 {
@@ -1626,13 +1635,13 @@ c  local variables
   c34 = C3 * C4;
 
 #pragma omp for nowait schedule(static)
-#if defined(_OPENMP)  
+//#if defined(_OPENMP)  
   for (i = iend; i >= ist; i--) {
       for (j = jend; j >= jst; j--) {
-#else	  
-  for (i = ist; i <= iend; i++) {
-    for (j = jst; j <= jend; j++) {
-#endif	
+//#else	  
+//  for (i = ist; i <= iend; i++) {
+//    for (j = jst; j <= jend; j++) {
+//#endif	
 
 /*--------------------------------------------------------------------
 c   form the block daigonal

@@ -25,19 +25,19 @@ ${COMMON}/${RAND}.o: ${COMMON}/${RAND}.f
 	cd ${COMMON}; ${FCOMPILE} ${RAND}.f
 
 ${COMMON}/c_${RAND}.o: ${COMMON}/c_${RAND}.c
-	cd ${COMMON}; ${CCOMPILE} c_${RAND}.c
+	cd ${COMMON}; ${CCOMPILE} -o c_${RAND}.o c_${RAND}.c
 
 ${COMMON}/print_results.o: ${COMMON}/print_results.f
 	cd ${COMMON}; ${FCOMPILE} print_results.f
 
 ${COMMON}/c_print_results.o: ${COMMON}/c_print_results.c
-	cd ${COMMON}; ${CCOMPILE} c_print_results.c
+	cd ${COMMON}; ${CCOMPILE} -o c_print_results.o  c_print_results.c
 
 ${COMMON}/timers.o: ${COMMON}/timers.f
 	cd ${COMMON}; ${FCOMPILE} timers.f
 
 ${COMMON}/c_timers.o: ${COMMON}/c_timers.c
-	cd ${COMMON}; ${CCOMPILE} c_timers.c
+	cd ${COMMON}; ${CCOMPILE} -o c_timers.o  c_timers.c
 
 ${COMMON}/wtime.o: ${COMMON}/${WTIME}
 	cd ${COMMON}; ${CCOMPILE} ${MACHINE} ${COMMON}/${WTIME}

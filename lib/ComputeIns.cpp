@@ -2,6 +2,8 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <map>
+#include <queue>
 #include <llvm/Pass.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Module.h>
@@ -13,9 +15,13 @@
 #include <llvm/Analysis/AliasAnalysis.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/InstrTypes.h>
+#include <llvm/Analysis/CallGraph.h>
 
 using std::string;
 using std::vector;
+using std::map;
+using std::pair;
+using std::queue;
 using namespace std;
 using namespace llvm;
 namespace{
@@ -25,18 +31,28 @@ namespace{
 			int BBNum;//store BB number;
 			vector<vector<long long>> BBFreq; //store the BBFrequency, every thread(core)'s information in every internal vector 
 			vector<vector<int>> vec;//store the store,add and load instructions' number of ervey BB 
-			
+
 			map<string,double> time_map;
 			ComputeIns() : ModulePass(ID){}
 			vector<vector<int>> BinaryOPNum;
 			//the instruction's number with frequency;
 			vector<vector<long long>> LoadAndStore;
 			vector<vector<long long>> OPNum;
-			
+
 			//judge the BB is or not in Paraller
 			map<int,int> isParallel;
-			
+
 			vector<double> timeInf;
+
+
+         ///////add by haomeng
+         vector<int> isParaRegion;
+         map<Function*, int> parallelRegion;
+         void isBBParallel(Module& M, BasicBlock * BB);
+         int isIteParallel(Module& M, Function* FF, int regionId, Function* F);
+         void judgeIsParallel(Module &M);
+         Function* getFunction(Value *Call);
+         /////////
 
 			bool runOnModule(Module &M) override;
 			void getTime(string s);//get instruction time
@@ -47,7 +63,7 @@ namespace{
 			void printInformation();
 			void getBinaryOPNum(Module &M);
 			void getBinaryOPNumAll();
-			void matchingBBwithParallel(string s);//match the basic block with the parallel
+			void matchingBBwithParallel(Module& M);//match the basic block with the parallel
 	};
 
 }
@@ -57,34 +73,137 @@ char ComputeIns::ID = 0 ;
 //regite pass
 static RegisterPass<ComputeIns> X("compute-BBnum","compute basic block's number and instrument",false,false);
 
-void ComputeIns::matchingBBwithParallel(string s){
 
-	ifstream infile;
-	infile.open(s);
 
-	vector<int> parallelInf;
-	int num;
-	while(!infile.eof()){
-		infile >> num;
-		parallelInf.push_back(num);
-	//	this->isParallel.insert(pair<int,int>(BBFlag,num));
-	}
-	
-	parallelInf.pop_back();
+static Value* castoff(Value* v)
+{
+    if(ConstantExpr* CE = dyn_cast<ConstantExpr>(v))
+    {
+        v = CE->getAsInstruction();
+    }
+
+    if(CastInst* CI = dyn_cast<CastInst>(v)){
+        return castoff(CI->getOperand(0));
+    }else
+        return v;
+}
+
+Function* ComputeIns::getFunction(Value *Call)
+{
+    if(Call==NULL) return NULL;
+    CallInst* CI = dyn_cast<CallInst>(Call);
+    if(CI==NULL) return NULL;
+    return dyn_cast<Function>(castoff(CI->getCalledValue()));
+}
+
+
+int ComputeIns::isIteParallel(Module& M, Function* FF, int regionId, Function* F)
+{
+    CallGraph CG(M);
+    CallGraphNode* fNode = CG[FF];
+    queue<CallGraphNode*> Q;
+    map<CallGraphNode*, bool> isVisit;
+    Q.push(fNode);
+    isVisit[fNode] = true;
+    while(!Q.empty())
+    {
+        fNode = Q.front();
+        Q.pop();
+        for(auto I = fNode->begin(), E = fNode->end(); I!=E; ++I){
+            Function* Fn = getFunction(I->first);
+            if(F==NULL || (Fn->isDeclaration()))
+                continue; // this is a external function
+            if(F == Fn)
+            {
+                return regionId;
+            }
+            fNode = CG[Fn];
+            if(isVisit.find(fNode) == isVisit.end() || !isVisit[fNode])
+            {
+                Q.push(fNode);
+                isVisit[fNode] = true;
+            }
+
+        }
+
+    }
+    return 0;
+
+}
+void ComputeIns::isBBParallel(Module&M, BasicBlock * BB)
+{
+    Function* F = BB->getParent();
+    StringRef fname = F->getName();
+    int regionId = -1;
+    if(fname.startswith(".omp_outlined"))
+        regionId = this->parallelRegion[F];
+    else
+    {
+        CallGraph CG(M);
+        map<Function*, int>::iterator it;
+        for(map<Function*, int>::iterator it = this->parallelRegion.begin();it != this->parallelRegion.end();it++)
+        {
+            Function* FF = it->first;
+            regionId = isIteParallel(M, FF, this->parallelRegion[FF], F);
+            if(regionId > 0)
+                break;
+        }
+    }
+    this->isParaRegion.push_back(regionId);
+
+    return;
+}
+void ComputeIns::judgeIsParallel(Module &M)
+{
+    int regionNum = 1;
+    for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
+        if (F->isDeclaration()) continue;
+        StringRef fname = F->getName();
+        if(fname.startswith(".omp_outlined"))
+        {
+            this->parallelRegion.insert(std::pair<Function*, int>(&*F,regionNum));
+            regionNum++;
+        }
+    }
+    for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
+        if (F->isDeclaration()) continue;
+        StringRef fname = F->getName();
+        errs()<<"=========="<<fname<<"\n";
+        if (fname.find("WriteOpenMPProfile")!=fname.npos) continue;
+        for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
+            isBBParallel(M, &*BB);
+        }
+    }
+
+    return;
+}
+
+
+
+void ComputeIns::matchingBBwithParallel(Module& M){
+
+	errs() <<"-------------matchingBBwithParallel()-----------------\n";
+
+   judgeIsParallel(M);
+
+	vector<int>& parallelInf = this->isParaRegion;
 
 	int BBFlag = 1;
 	for(auto I : parallelInf){
+      errs()<< "--------------"<<I <<"\n";
 		this->isParallel.insert(pair<int,int>(BBFlag,I));
 		BBFlag++;
 	}
 
 	errs() << "----------matchingBBwithParallel--------\n"
 		<<"基本块数量：\t"<< this->isParallel.size()<< "\n"
-		   <<"-----------------------------------------\n";
-	infile.close();
+		<<"-----------------------------------------\n";
 
 }
 void ComputeIns::getBinaryOPNumAll(){
+
+	errs() <<"-------------getBinaryOPNumAll()-----------------\n";
+
 	//每个基本块中的运算符
 	vector<vector<int>>::iterator BBLable;
 	vector<int> BBLable_temp;
@@ -110,19 +229,21 @@ void ComputeIns::getBinaryOPNumAll(){
 		}
 	}
 
-	
+
 }
 //getBinaryOPNum is to get the number of any compute instruction in every block, like add sub.etc
 void ComputeIns::getBinaryOPNum(Module &M){
+	errs() <<"-------------getBinaryOPNum()-----------------\n";
+
 
 	vector<int> bb; //store the BinaryOP number of every Block
 	int add=0,fadd=0,mul=0,fmul=0,sub=0,fsub=0,udiv=0,sdiv=0,fdiv=0,urem=0,srem=0,frem=0;	
-	
+
 	for(auto FB = M.begin(),FE = M.end(); FB!=FE ; ++FB){
 		for(auto BB = FB->begin(), BE = FB->end(); BB!=BE ; ++BB){
 			for(auto IB = BB->begin(), IE = BB->end(); IB!=IE ; ++IB){
 				Instruction* ins = &*IB;
-				
+
 				unsigned Op = IB->getOpcode();
 				switch(Op){
 					case Instruction::FAdd:
@@ -165,7 +286,7 @@ void ComputeIns::getBinaryOPNum(Module &M){
 						break;
 				}
 
-			    if(CallInst* CI = dyn_cast<CallInst>(ins)){
+				if(CallInst* CI = dyn_cast<CallInst>(ins)){
 					Function* callee = CI->getCalledFunction();
 					if(callee->getName().startswith("__kmpc_fork_call")){
 						bb.push_back(add);
@@ -202,13 +323,15 @@ void ComputeIns::getBinaryOPNum(Module &M){
 			this->BinaryOPNum.push_back(bb);
 			bb.clear();
 		}
-	
-	
+
+
 	}
-	
+
 
 }
 void ComputeIns::getBBNum(Module &M){
+	errs() <<"-------------getBBNum()-----------------\n";
+
 	int number = 0;
 	for(auto FB = M.begin(),FE = M.end(); FB!=FE ; ++FB){
 		for(auto BB = FB->begin(), BE = FB->end(); BB!=BE ; ++BB){
@@ -234,6 +357,8 @@ void ComputeIns::getBBNum(Module &M){
 
 void ComputeIns::getBBFrequency(string s){
 
+	errs() <<"-------------getBBFrequency()-----------------\n";
+
 	ifstream infile;
 	infile.open(s);
 
@@ -248,8 +373,8 @@ void ComputeIns::getBBFrequency(string s){
 			flag++;
 		}else{
 			flag = 1;
-			errs() << "-------------------\n"
-				<< "该核心线程有：\t" << thread.size() << "\t个基本块\n";
+//			errs() << "-------------------\n"
+//				<< "该核心线程有：\t" << thread.size() << "\t个基本块\n";
 			this->BBFreq.push_back(thread);
 			thread.clear();
 			thread.push_back(num);
@@ -268,11 +393,14 @@ void ComputeIns::getBBFrequency(string s){
 
 void ComputeIns::getTime(string s){
 
+
+	errs() <<"-------------getTime()-----------------\n";
+
 	ifstream infile;
 	infile.open(s);
 
 	double time;
-		
+
 	int flag = 0;
 	while(!infile.eof()){
 		infile >> time;
@@ -312,11 +440,14 @@ void ComputeIns::getTime(string s){
 
 
 void ComputeIns::getInsKind(Module &M){
+
+	errs() <<"-------------getInsKind()-----------------\n";
+
 	int loadNum=0,storeNum=0,boNum=0;
 	vector<int> bb;
 	for(auto FB = M.begin(),FE = M.end(); FB!=FE ; ++FB){
 		for(auto BB = FB->begin(), BE = FB->end(); BB!=BE ; ++BB){
-			errs()<<*BB<<"\n";
+		//				errs()<<*BB<<"\n";
 			for(auto IB = BB->begin(), IE = BB->end(); IB!=IE ; ++IB){
 				Instruction* ins = &*IB;
 				if(isa<LoadInst>(IB)){
@@ -351,7 +482,10 @@ void ComputeIns::getInsKind(Module &M){
 }
 
 void ComputeIns::printInformation(){
-	errs() << this->vec.size() << "\n";
+
+	errs() <<"-------------printInformation()-----------------\n";
+
+	//	errs() << this->vec.size() << "\n";
 	int i = 0;
 	vector<vector<int>>::iterator BBLable;
 	vector<int> BBLable_temp;
@@ -363,27 +497,27 @@ void ComputeIns::printInformation(){
 
 	int threadnum = 1;
 	for(ThreadLable = this->BBFreq.begin(); ThreadLable != this->BBFreq.end(); ThreadLable++){
-		errs() << "CoreNumber is : \t" << threadnum <<"\n";
-		errs() << "-----------------------------------------------------------\n";
+		//		errs() << "CoreNumber is : \t" << threadnum <<"\n";
+		//		errs() << "-----------------------------------------------------------\n";
 		ThreadLable_temp = *ThreadLable;
 		int flag;
 		i=0;
 		vector<long long> BBInCore;
 		for(bbFreq = ThreadLable_temp.begin(),BBLable = this->vec.begin(); bbFreq != ThreadLable_temp.end(),BBLable != this->vec.end(); bbFreq++,BBLable++){
-			errs() << "CoreNumber : \t"<< threadnum <<"\tBBLable is : \t" << i ;
+			//			errs() << "CoreNumber : \t"<< threadnum <<"\tBBLable is : \t" << i ;
 			BBLable_temp = *BBLable;
 			flag = 0;
 			for(insInf = BBLable_temp.begin(); insInf != BBLable_temp.end(); insInf++){
 				if(flag == 0){
-					errs()<<"\nload instructions' number is:\t" << *insInf * (*bbFreq);
+					//					errs()<<"\nload instructions' number is:\t" << *insInf * (*bbFreq);
 					BBInCore.push_back(*insInf * (*bbFreq));
 				}else if(flag == 1){
-					errs()<<"\nstore instructions' number is:\t" << *insInf * (*bbFreq);
+					//					errs()<<"\nstore instructions' number is:\t" << *insInf * (*bbFreq);
 					BBInCore.push_back(*insInf * (*bbFreq));
 				}else if(flag == 2){
-					errs()<<"\nBinaryOperator instructions' number is:\t" << *insInf * (*bbFreq)
-						<<"\n" 
-						<<"--------------------------------------------\n";
+					//					errs()<<"\nBinaryOperator instructions' number is:\t" << *insInf * (*bbFreq)
+					//						<<"\n" 
+					//						<<"--------------------------------------------\n";
 				}else{
 					continue;
 				}
@@ -395,8 +529,8 @@ void ComputeIns::printInformation(){
 
 		}
 		threadnum++;
-		errs() << "-----------------------------------------------------------\n";
-	
+		//		errs() << "-----------------------------------------------------------\n";
+
 	}
 }
 
@@ -409,28 +543,32 @@ void ComputeIns::getProTime(){
 	vector<vector<long long>>::iterator iter;
 	vector<long long> iter_temp;
 	vector<long long>::iterator it;
-	
+
 	int insFlag = 1;
 	int BBFlag = 1;
 	for(iter = this->LoadAndStore.begin() ; iter != this->LoadAndStore.end(); iter++){
 		iter_temp = *iter;
 		for(it = iter_temp.begin(); it != iter_temp.end(); it++){
 			if(BBFlag <= this->BBNum){
-				if(insFlag == 1){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("load")->second));
-					insFlag++;
-				}else if(insFlag == 2){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("store")->second));
+				if(this->isParallel.find(BBFlag)->second == 0){
+					if(insFlag == 1){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("load")->second));
+						insFlag++;
+					}else if(insFlag == 2){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("store")->second));
+					}	
 				}
 			}else{
 				BBFlag = 1;
 				this->timeInf.push_back(time_tmp);
 				time_tmp  = 0;
-				if(insFlag == 1){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("load")->second));
-					insFlag++;
-				}else if(insFlag == 2){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("store")->second));
+				if(this->isParallel.find(BBFlag)->second == 0){
+					if(insFlag == 1){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("load")->second));
+						insFlag++;
+					}else if(insFlag == 2){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("store")->second));
+					}	
 				}
 			}
 		}
@@ -448,187 +586,294 @@ void ComputeIns::getProTime(){
 		iter_temp = *iter;
 		for(it = iter_temp.begin(); it != iter_temp.end(); it++){
 			if(BBFlag <= this->BBNum){
-				if(insFlag == 1){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("add")->second));
-					insFlag++;
-				}else if(insFlag == 2){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("fadd")->second));
-					insFlag++;
-				}else if(insFlag == 3){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("sub")->second));
-					insFlag++;
-				}else if(insFlag == 4){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("fsub")->second));
-					insFlag++;
-				}else if(insFlag == 5){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("mul")->second));
-					insFlag++;
-				}else if(insFlag == 6){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("fmul")->second));
-					insFlag++;
-				}else if(insFlag == 7){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("udiv")->second));
-					insFlag++;
-				}else if(insFlag == 8){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("sdiv")->second));
-					insFlag++;
-				}else if(insFlag == 9){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("fdiv")->second));
-					insFlag++;
-				}else if(insFlag == 10){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("urem")->second));
-					insFlag++;
-				}else if(insFlag == 11){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("srem")->second));
-					insFlag++;
-				}else if(insFlag == 12){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("frem")->second));
+				if(this->isParallel.find(BBFlag)->second == 0){
+
+					if(insFlag == 1){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("add")->second));
+						insFlag++;
+					}else if(insFlag == 2){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("fadd")->second));
+						insFlag++;
+					}else if(insFlag == 3){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("sub")->second));
+						insFlag++;
+					}else if(insFlag == 4){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("fsub")->second));
+						insFlag++;
+					}else if(insFlag == 5){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("mul")->second));
+						insFlag++;
+					}else if(insFlag == 6){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("fmul")->second));
+						insFlag++;
+					}else if(insFlag == 7){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("udiv")->second));
+						insFlag++;
+					}else if(insFlag == 8){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("sdiv")->second));
+						insFlag++;
+					}else if(insFlag == 9){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("fdiv")->second));
+						insFlag++;
+					}else if(insFlag == 10){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("urem")->second));
+						insFlag++;
+					}else if(insFlag == 11){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("srem")->second));
+						insFlag++;
+					}else if(insFlag == 12){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("frem")->second));
+					}
 				}
 			}else{
 				BBFlag = 1;
 				this->timeInf[i] = this->timeInf[i] + time_tmp;
 				time_tmp = 0;
 				i++;
-				if(insFlag == 1){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("add")->second));
-					insFlag++;
-				}else if(insFlag == 2){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("fadd")->second));
-					insFlag++;
-				}else if(insFlag == 3){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("sub")->second));
-					insFlag++;
-				}else if(insFlag == 4){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("fsub")->second));
-					insFlag++;
-				}else if(insFlag == 5){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("mul")->second));
-					insFlag++;
-				}else if(insFlag == 5){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("mul")->second));
-					insFlag++;
-				}else if(insFlag == 6){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("fmul")->second));
-					insFlag++;
-				}else if(insFlag == 7){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("udiv")->second));
-					insFlag++;
-				}else if(insFlag == 8){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("sdiv")->second));
-					insFlag++;
-				}else if(insFlag == 9){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("fdiv")->second));
-					insFlag++;
-				}else if(insFlag == 10){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("urem")->second));
-					insFlag++;
-				}else if(insFlag == 11){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("srem")->second));
-					insFlag++;
-				}else if(insFlag == 12){
-					time_tmp = time_tmp + ((*it) * (this->time_map.find("frem")->second));
+				if(this->isParallel.find(BBFlag)->second == 0){
+					if(insFlag == 1){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("add")->second));
+						insFlag++;
+					}else if(insFlag == 2){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("fadd")->second));
+						insFlag++;
+					}else if(insFlag == 3){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("sub")->second));
+						insFlag++;
+					}else if(insFlag == 4){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("fsub")->second));
+						insFlag++;
+					}else if(insFlag == 5){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("mul")->second));
+						insFlag++;
+					}else if(insFlag == 5){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("mul")->second));
+						insFlag++;
+					}else if(insFlag == 6){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("fmul")->second));
+						insFlag++;
+					}else if(insFlag == 7){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("udiv")->second));
+						insFlag++;
+					}else if(insFlag == 8){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("sdiv")->second));
+						insFlag++;
+					}else if(insFlag == 9){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("fdiv")->second));
+						insFlag++;
+					}else if(insFlag == 10){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("urem")->second));
+						insFlag++;
+					}else if(insFlag == 11){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("srem")->second));
+						insFlag++;
+					}else if(insFlag == 12){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("frem")->second));
+					}
 				}
 			}
 		}
 		insFlag = 1;
 		BBFlag ++;
 	}
-	
+
 	this->timeInf[i] = this->timeInf[i] + time_tmp;
-	
+
 	errs() << "\n\n\n";
 	int p=1;
+
+   double serial_time = 0;
 	for(auto I : this->timeInf){
 
-		errs() <<" 核心线程:\t" << p <<"\t 时间为：\t" << I <<"ns\n";
-		p++;
+	//	errs() <<" 核心线程:\t" << p <<"\t 串行时间为：\t" << I <<"ns\n";
+	   serial_time += I;
+      p++;
 	}
-		
-}
 
+   errs() <<"-----------------------------\n"
+      <<"串行域时间为：\t" << serial_time << "\n"
+      <<"-------------------------------\n";
+
+	map<int,int>::iterator miter;
+	miter = this->isParallel.begin();
+	int parallelSize = 0;
+	while(miter != this->isParallel.end()){
+		if(miter->second >= parallelSize){
+			parallelSize =  miter->second;
+		}
+		miter++;
+
+	}
+	errs() <<"----------------------------------------\n";
+	errs() << "并行域共有：\t" << parallelSize <<"个\n";
+
+	int threadnum = this->OPNum.size() / this->BBNum;
+//	errs() <<"共有线程数目：\t" << threadnum <<"\n";
+	
+	vector<double> parallelTime;
+	vector<vector<double>> parallel;
+	vector<long long> tmp;
+	//第一个核心线程基本块的位置
+	int BBLocation;
+	//当前的位置
+	int BBLocationNow;
+	double parallel_time_tmp = 0 ;
+	
+	for(int pi = 1; pi <= parallelSize ; pi++){
+		
+		for(int z=0 ; z < threadnum ; z++){
+			parallelTime.push_back(0);
+		}
+		
+		miter = this->isParallel.begin();
+		while(miter != this->isParallel.end()){
+			if(miter->second == pi){
+				BBLocation = miter->first - 1;
+			//	errs() << "BBLocation is :\t" << BBLocation << "\n";
+				BBLocationNow = BBLocation;
+				int threadFlag = 0;
+				while(BBLocationNow < this->OPNum.size()){			
+					parallel_time_tmp = 0;
+
+					tmp = LoadAndStore[BBLocationNow];
+//					errs() << "----------"<<tmp[0]<<"---------"<<tmp[1]<<"------\n";
+					parallel_time_tmp = parallel_time_tmp + tmp[0] * this->time_map.find("load")->second + tmp[1] * this->time_map.find("store")->second; 
+
+					tmp = OPNum[BBLocationNow];
+					parallel_time_tmp = parallel_time_tmp
+						+tmp[0] * this->time_map.find("add")->second 
+						+tmp[1] * this->time_map.find("fadd")->second 
+						+tmp[2] * this->time_map.find("sub")->second 
+						+tmp[3] * this->time_map.find("fsub")->second 
+						+tmp[4] * this->time_map.find("mul")->second 
+						+tmp[5] * this->time_map.find("fmul")->second 
+						+tmp[6] * this->time_map.find("udiv")->second 
+						+tmp[7] * this->time_map.find("sdiv")->second 
+						+tmp[8] * this->time_map.find("fdiv")->second 
+						+tmp[9] * this->time_map.find("urem")->second 
+						+tmp[10] * this->time_map.find("srem")->second
+						+tmp[11] * this->time_map.find("frem")->second ;
+					
+					parallelTime[threadFlag] = parallelTime[threadFlag] + parallel_time_tmp;
+
+					threadFlag++;
+					BBLocationNow = BBLocationNow + this->BBNum;
+				}
+			}
+			miter++;
+		}
+
+		parallel.push_back(parallelTime);
+		parallelTime.clear();
+	}
+
+	errs() << "--------------并行域名执行时间如下-----------------\n";
+	vector<vector<double>>::iterator piter;                                                                                                                             
+	vector<double> piter_temp;                                                                                                                                      
+	vector<double>::iterator pit;   
+
+	int ppflag = 1;
+   double pt_tmp = 0;
+	for(piter = parallel.begin() ; piter != parallel.end() ; piter++){
+		piter_temp = *piter;
+		
+		pit = max_element(begin(piter_temp),end(piter_temp));
+
+		errs() <<"并行域\t" << ppflag << "\t时间为：\t" << *pit <<"ns\n";
+      
+      pt_tmp  += *pit; 
+		ppflag++;
+	}
+
+   errs() <<"-------------------------------\n"
+      <<"总时间为：\t" << pt_tmp + serial_time << "ns\n";
+}
 bool ComputeIns::runOnModule(Module &M){
+
+	errs() <<"-------------runOnModule()-----------------\n";
 
 	string s = "data.txt";
 	string t = "time.txt";
-//	string p = "parallel.txt";
+	string p = "parallel.txt";
 	//获取12条指令的时间
 	this->getTime(t);
 	//遍历基本块得到基本块数量
 	this->getBBNum(M);
-	
+
 	errs() << "--------------------------------------------\n"
 		<<"遍历得到的基本块个数为：\t" << this->BBNum << "\n";
 
 
 	//根据data.txt文件获取每个基本块的执行次数
 	this->getBBFrequency(s);
-	
+
 	errs()<<"-----------------------------------------------\n"
 		<< "一共有：\t" << this->time_map.size()<< "\t指令的时间信息\n";	
-	
-//	this->matchingBBwithParallel(p);
 
-	vector<vector<int>>::iterator iter;
-	vector<int> iter_temp;
-	vector<int>::iterator it;
+	this->matchingBBwithParallel(M);
+
+	vector<vector<long long>>::iterator iter;
+	vector<long long> iter_temp;
+	vector<long long>::iterator it;
 
 	errs() << this->BBFreq.size() <<"\n";
 	//test and print the basic blocks' frequency  
 	/**
-	int i = 1;
-	for(iter = this->BBFreq.begin() ; iter != this->BBFreq.end() ; iter++){
-		iter_temp = *iter;
-		errs()
-			<< "thread num :\t" << i << "\n";
-		for(it = iter_temp.begin() ; it != iter_temp.end() ; it++){
-			errs() << *it <<"\n";
-		}
-		i++;
-	}
-	**/
+	  int i = 1;
+	  for(iter = this->BBFreq.begin() ; iter != this->BBFreq.end() ; iter++){
+	  iter_temp = *iter;
+	  errs()
+	  << "thread num :\t" << i << "\n";
+	  for(it = iter_temp.begin() ; it != iter_temp.end() ; it++){
+	  errs() << *it <<"\n";
+	  }
+	  i++;
+	  }
+	 **/
 	this->getInsKind(M);
 	this->printInformation();
 
 	this->getBinaryOPNum(M);
 	//test and print the binary operator of every block 
 	/**	
-	int BBnum = 0;
-	for(iter = this->BinaryOPNum.begin() ; iter != this->BinaryOPNum.end(); iter++){
-		iter_temp = *iter;
-		errs()<< "bb number is : \t " << BBnum <<"\n";
-		for(it = iter_temp.begin(); it != iter_temp.end(); it++){
-			errs() << *it <<"\n";
-		}
-		BBnum++;
-	}
-	
-	errs()<<"--------------------------------------------\n";
-	**/
+	  int BBnum = 0;
+	  for(iter = this->BinaryOPNum.begin() ; iter != this->BinaryOPNum.end(); iter++){
+	  iter_temp = *iter;
+	  errs()<< "bb number is : \t " << BBnum <<"\n";
+	  for(it = iter_temp.begin(); it != iter_temp.end(); it++){
+	  errs() << *it <<"\n";
+	  }
+	  BBnum++;
+	  }
+
+	  errs()<<"--------------------------------------------\n";
+	 **/
 	this->getBinaryOPNumAll();
 	//test and pirnt all the binary operator , load and store instruction with frequency
-	/**
-	int	BBnum = 1;
-	for(iter = this->OPNum.begin() ; iter != this->OPNum.end(); iter++){
-		iter_temp = *iter;
-		errs()<< "BB number is : \t " << BBnum <<"\n";
-		for(it = iter_temp.begin(); it != iter_temp.end(); it++){
-			errs() << *it <<"\n";
-		}
-		BBnum++;
-	}
+/**	errs() << "-----------------各种信息如下---------------\n";
+	  int	BBnum = 1;
+	  for(iter = this->OPNum.begin() ; iter != this->OPNum.end(); iter++){
+	  iter_temp = *iter;
+	  errs()<< "BB number is : \t " << BBnum <<"\n";
+	  for(it = iter_temp.begin(); it != iter_temp.end(); it++){
+	  errs() << *it <<"\n";
+	  }
+	  BBnum++;
+	  }
 
-	BBnum = 1;
-	for(iter = this->LoadAndStore.begin() ; iter != this->LoadAndStore.end(); iter++){
-		iter_temp = *iter;
-		errs()<< "BB number is : \t " << BBnum <<"\n";
-		for(it = iter_temp.begin(); it != iter_temp.end(); it++){
-			errs() << *it <<"\n";
-		}
-		BBnum++;
-	}
-	
-	**/
-	this->getProTime();
+	  BBnum = 1;
+	  for(iter = this->LoadAndStore.begin() ; iter != this->LoadAndStore.end(); iter++){
+	  iter_temp = *iter;
+	  errs()<< "BB number is : \t " << BBnum <<"\n";
+	  for(it = iter_temp.begin(); it != iter_temp.end(); it++){
+	  errs() << *it <<"\n";
+	  }
+	  BBnum++;
+	  }
+
+	errs() <<"-------------------------------------------\n";
+**/
+   this->getProTime();
 	return true;
 }
 
