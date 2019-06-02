@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <sys/resource.h>
 
+#include <omp.h>
 
 
 void timing(double* wcTime, double* cpuTime);

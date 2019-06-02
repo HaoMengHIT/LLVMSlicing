@@ -17,6 +17,77 @@ target triple = "x86_64-pc-linux-gnu"
 @.str.1 = private unnamed_addr constant [23 x i8] c";unknown;unknown;0;0;;\00", align 1
 
 ; Function Attrs: noinline nounwind optnone uwtable
+define void @dummy_(double*, double*) #0 {
+  %3 = alloca double*, align 8
+  %4 = alloca double*, align 8
+  store double* %0, double** %3, align 8
+  store double* %1, double** %4, align 8
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define void @dummy(double*, double*) #0 {
+  %3 = alloca double*, align 8
+  %4 = alloca double*, align 8
+  store double* %0, double** %3, align 8
+  store double* %1, double** %4, align 8
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define void @timing_(double*, double*) #0 {
+  %3 = alloca double*, align 8
+  %4 = alloca double*, align 8
+  store double* %0, double** %3, align 8
+  store double* %1, double** %4, align 8
+  %5 = load double*, double** %3, align 8
+  %6 = load double*, double** %4, align 8
+  call void @timing(double* %5, double* %6)
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define void @timing(double*, double*) #0 {
+  %3 = alloca double*, align 8
+  %4 = alloca double*, align 8
+  %5 = alloca %struct.timeval, align 8
+  %6 = alloca %struct.rusage, align 8
+  store double* %0, double** %3, align 8
+  store double* %1, double** %4, align 8
+  %7 = call i32 @gettimeofday(%struct.timeval* %5, %struct.timezone* null) #5
+  %8 = getelementptr inbounds %struct.timeval, %struct.timeval* %5, i32 0, i32 0
+  %9 = load i64, i64* %8, align 8
+  %10 = sitofp i64 %9 to double
+  %11 = getelementptr inbounds %struct.timeval, %struct.timeval* %5, i32 0, i32 1
+  %12 = load i64, i64* %11, align 8
+  %13 = sitofp i64 %12 to double
+  %14 = fdiv double %13, 1.000000e+06
+  %15 = fadd double %10, %14
+  %16 = load double*, double** %3, align 8
+  store double %15, double* %16, align 8
+  %17 = call i32 @getrusage(i32 0, %struct.rusage* %6) #5
+  %18 = getelementptr inbounds %struct.rusage, %struct.rusage* %6, i32 0, i32 0
+  %19 = getelementptr inbounds %struct.timeval, %struct.timeval* %18, i32 0, i32 0
+  %20 = load i64, i64* %19, align 8
+  %21 = sitofp i64 %20 to double
+  %22 = getelementptr inbounds %struct.rusage, %struct.rusage* %6, i32 0, i32 0
+  %23 = getelementptr inbounds %struct.timeval, %struct.timeval* %22, i32 0, i32 1
+  %24 = load i64, i64* %23, align 8
+  %25 = sitofp i64 %24 to double
+  %26 = fdiv double %25, 1.000000e+06
+  %27 = fadd double %21, %26
+  %28 = load double*, double** %4, align 8
+  store double %27, double* %28, align 8
+  ret void
+}
+
+; Function Attrs: nounwind
+declare i32 @gettimeofday(%struct.timeval*, %struct.timezone*) #1
+
+; Function Attrs: nounwind
+declare i32 @getrusage(i32, %struct.rusage*) #1
+
+; Function Attrs: noinline nounwind optnone uwtable
 define void @jacobi_line(double*, double*, double*, double*, double*, double*, double*, i32) #0 {
   %9 = alloca double*, align 8
   %10 = alloca double*, align 8
@@ -150,14 +221,14 @@ define i32 @main(i32, i8**) #0 {
   %28 = getelementptr inbounds i8*, i8** %27, i64 0
   %29 = load i8*, i8** %28, align 8
   %30 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([18 x i8], [18 x i8]* @.str, i32 0, i32 0), i8* %29)
-  call void @exit(i32 1) #5
+  call void @exit(i32 1) #6
   unreachable
 
 ; <label>:31:                                     ; preds = %2
   %32 = load i8**, i8*** %5, align 8
   %33 = getelementptr inbounds i8*, i8** %32, i64 1
   %34 = load i8*, i8** %33, align 8
-  %35 = call i32 @atoi(i8* %34) #6
+  %35 = call i32 @atoi(i8* %34) #7
   store i32 %35, i32* %13, align 4
   %36 = load i32, i32* %13, align 4
   %37 = sext i32 %36 to i64
@@ -168,7 +239,7 @@ define i32 @main(i32, i8**) #0 {
   %42 = sext i32 %41 to i64
   %43 = mul i64 %40, %42
   %44 = mul i64 %43, 8
-  %45 = call noalias i8* @malloc(i64 %44) #7
+  %45 = call noalias i8* @malloc(i64 %44) #5
   %46 = bitcast i8* %45 to double*
   %47 = getelementptr inbounds [2 x double*], [2 x double*]* %22, i64 0, i64 0
   store double* %46, double** %47, align 16
@@ -181,7 +252,7 @@ define i32 @main(i32, i8**) #0 {
   %54 = sext i32 %53 to i64
   %55 = mul i64 %52, %54
   %56 = mul i64 %55, 8
-  %57 = call noalias i8* @malloc(i64 %56) #7
+  %57 = call noalias i8* @malloc(i64 %56) #5
   %58 = bitcast i8* %57 to double*
   %59 = getelementptr inbounds [2 x double*], [2 x double*]* %22, i64 0, i64 1
   store double* %58, double** %59, align 8
@@ -194,7 +265,7 @@ define i32 @main(i32, i8**) #0 {
   %66 = sext i32 %65 to i64
   %67 = mul i64 %64, %66
   %68 = mul i64 %67, 8
-  %69 = call noalias i8* @malloc(i64 %68) #7
+  %69 = call noalias i8* @malloc(i64 %68) #5
   %70 = bitcast i8* %69 to double*
   store double* %70, double** %23, align 8
   store i32 0, i32* %18, align 4
@@ -304,38 +375,37 @@ define i32 @main(i32, i8**) #0 {
   store i32 0, i32* %17, align 4
   br label %136
 
-; <label>:136:                                    ; preds = %145, %135
+; <label>:136:                                    ; preds = %141, %135
   %137 = load i32, i32* %17, align 4
   %138 = load i32, i32* %12, align 4
   %139 = icmp slt i32 %137, %138
-  br i1 %139, label %140, label %148
+  br i1 %139, label %140, label %144
 
 ; <label>:140:                                    ; preds = %136
   call void (%ident_t*, i32, void (i32*, i32*, ...)*, ...) @__kmpc_fork_call(%ident_t* @0, i32 6, void (i32*, i32*, ...)* bitcast (void (i32*, i32*, i32*, i32*, [2 x double*]*, i32*, i32*, double**)* @.omp_outlined. to void (i32*, i32*, ...)*), i32* %14, i32* %13, [2 x double*]* %22, i32* %19, i32* %18, double** %23)
-  %141 = getelementptr inbounds [2 x double*], [2 x double*]* %22, i64 0, i64 0
-  %142 = load double*, double** %141, align 16
-  %143 = getelementptr inbounds [2 x double*], [2 x double*]* %22, i64 0, i64 1
-  %144 = load double*, double** %143, align 8
-  call void @dummy(double* %142, double* %144)
-  br label %145
+  br label %141
 
-; <label>:145:                                    ; preds = %140
-  %146 = load i32, i32* %17, align 4
-  %147 = add nsw i32 %146, 1
-  store i32 %147, i32* %17, align 4
+; <label>:141:                                    ; preds = %140
+  %142 = load i32, i32* %17, align 4
+  %143 = add nsw i32 %142, 1
+  store i32 %143, i32* %17, align 4
   br label %136
 
-; <label>:148:                                    ; preds = %136
+; <label>:144:                                    ; preds = %136
   call void @timing(double* %7, double* %9)
-  %149 = load double, double* %7, align 8
-  %150 = load double, double* %6, align 8
-  %151 = fsub double %149, %150
-  store double %151, double* %10, align 8
-  %152 = load i32, i32* %13, align 4
-  %153 = load double, double* %10, align 8
-  %154 = load i32, i32* %12, align 4
-  %155 = load i32, i32* %12, align 4
-  %156 = sitofp i32 %155 to double
+  %145 = load double, double* %7, align 8
+  %146 = load double, double* %6, align 8
+  %147 = fsub double %145, %146
+  store double %147, double* %10, align 8
+  %148 = load i32, i32* %13, align 4
+  %149 = load double, double* %10, align 8
+  %150 = load i32, i32* %12, align 4
+  %151 = load i32, i32* %12, align 4
+  %152 = sitofp i32 %151 to double
+  %153 = load i32, i32* %13, align 4
+  %154 = sub nsw i32 %153, 2
+  %155 = sitofp i32 %154 to double
+  %156 = fmul double %152, %155
   %157 = load i32, i32* %13, align 4
   %158 = sub nsw i32 %157, 2
   %159 = sitofp i32 %158 to double
@@ -344,27 +414,23 @@ define i32 @main(i32, i8**) #0 {
   %162 = sub nsw i32 %161, 2
   %163 = sitofp i32 %162 to double
   %164 = fmul double %160, %163
-  %165 = load i32, i32* %13, align 4
-  %166 = sub nsw i32 %165, 2
-  %167 = sitofp i32 %166 to double
-  %168 = fmul double %164, %167
-  %169 = load double, double* %10, align 8
-  %170 = fdiv double %168, %169
-  %171 = fdiv double %170, 1.000000e+06
-  %172 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([44 x i8], [44 x i8]* @.str.2, i32 0, i32 0), i32 %152, double %153, i32 %154, double %171)
+  %165 = load double, double* %10, align 8
+  %166 = fdiv double %164, %165
+  %167 = fdiv double %166, 1.000000e+06
+  %168 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([44 x i8], [44 x i8]* @.str.2, i32 0, i32 0), i32 %148, double %149, i32 %150, double %167)
   ret i32 0
 }
 
-declare i32 @printf(i8*, ...) #1
+declare i32 @printf(i8*, ...) #2
 
 ; Function Attrs: noreturn nounwind
-declare void @exit(i32) #2
+declare void @exit(i32) #3
 
 ; Function Attrs: nounwind readonly
-declare i32 @atoi(i8*) #3
+declare i32 @atoi(i8*) #4
 
 ; Function Attrs: nounwind
-declare noalias i8* @malloc(i64) #4
+declare noalias i8* @malloc(i64) #1
 
 ; Function Attrs: noinline nounwind optnone uwtable
 define internal void @.omp_outlined.(i32* noalias, i32* noalias, i32* dereferenceable(4), i32* dereferenceable(4), [2 x double*]* dereferenceable(16), i32* dereferenceable(4), i32* dereferenceable(4), double** dereferenceable(8)) #0 {
@@ -576,88 +642,17 @@ declare void @__kmpc_for_static_init_4(%ident_t*, i32, i32, i32*, i32*, i32*, i3
 
 declare void @__kmpc_for_static_fini(%ident_t*, i32)
 
-; Function Attrs: noinline nounwind optnone uwtable
-define void @timing_(double*, double*) #0 {
-  %3 = alloca double*, align 8
-  %4 = alloca double*, align 8
-  store double* %0, double** %3, align 8
-  store double* %1, double** %4, align 8
-  %5 = load double*, double** %3, align 8
-  %6 = load double*, double** %4, align 8
-  call void @timing(double* %5, double* %6)
-  ret void
-}
-
-; Function Attrs: noinline nounwind optnone uwtable
-define void @timing(double*, double*) #0 {
-  %3 = alloca double*, align 8
-  %4 = alloca double*, align 8
-  %5 = alloca %struct.timeval, align 8
-  %6 = alloca %struct.rusage, align 8
-  store double* %0, double** %3, align 8
-  store double* %1, double** %4, align 8
-  %7 = call i32 @gettimeofday(%struct.timeval* %5, %struct.timezone* null) #7
-  %8 = getelementptr inbounds %struct.timeval, %struct.timeval* %5, i32 0, i32 0
-  %9 = load i64, i64* %8, align 8
-  %10 = sitofp i64 %9 to double
-  %11 = getelementptr inbounds %struct.timeval, %struct.timeval* %5, i32 0, i32 1
-  %12 = load i64, i64* %11, align 8
-  %13 = sitofp i64 %12 to double
-  %14 = fdiv double %13, 1.000000e+06
-  %15 = fadd double %10, %14
-  %16 = load double*, double** %3, align 8
-  store double %15, double* %16, align 8
-  %17 = call i32 @getrusage(i32 0, %struct.rusage* %6) #7
-  %18 = getelementptr inbounds %struct.rusage, %struct.rusage* %6, i32 0, i32 0
-  %19 = getelementptr inbounds %struct.timeval, %struct.timeval* %18, i32 0, i32 0
-  %20 = load i64, i64* %19, align 8
-  %21 = sitofp i64 %20 to double
-  %22 = getelementptr inbounds %struct.rusage, %struct.rusage* %6, i32 0, i32 0
-  %23 = getelementptr inbounds %struct.timeval, %struct.timeval* %22, i32 0, i32 1
-  %24 = load i64, i64* %23, align 8
-  %25 = sitofp i64 %24 to double
-  %26 = fdiv double %25, 1.000000e+06
-  %27 = fadd double %21, %26
-  %28 = load double*, double** %4, align 8
-  store double %27, double* %28, align 8
-  ret void
-}
-
-; Function Attrs: nounwind
-declare i32 @gettimeofday(%struct.timeval*, %struct.timezone*) #4
-
-; Function Attrs: nounwind
-declare i32 @getrusage(i32, %struct.rusage*) #4
-
-; Function Attrs: noinline nounwind optnone uwtable
-define void @dummy_(double*, double*) #0 {
-  %3 = alloca double*, align 8
-  %4 = alloca double*, align 8
-  store double* %0, double** %3, align 8
-  store double* %1, double** %4, align 8
-  ret void
-}
-
-; Function Attrs: noinline nounwind optnone uwtable
-define void @dummy(double*, double*) #0 {
-  %3 = alloca double*, align 8
-  %4 = alloca double*, align 8
-  store double* %0, double** %3, align 8
-  store double* %1, double** %4, align 8
-  ret void
-}
-
 attributes #0 = { noinline nounwind optnone uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #2 = { noreturn nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #3 = { nounwind readonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #4 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #5 = { noreturn nounwind }
-attributes #6 = { nounwind readonly }
-attributes #7 = { nounwind }
+attributes #1 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { noreturn nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind readonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { nounwind }
+attributes #6 = { noreturn nounwind }
+attributes #7 = { nounwind readonly }
 
 !llvm.ident = !{!0, !0, !0}
 !llvm.module.flags = !{!1}
 
-!0 = !{!"clang version 6.0.0-1ubuntu2 (tags/RELEASE_600/final)"}
+!0 = !{!"clang version 6.0.0-1ubuntu2~16.04.1 (tags/RELEASE_600/final)"}
 !1 = !{i32 1, !"wchar_size", i32 4}

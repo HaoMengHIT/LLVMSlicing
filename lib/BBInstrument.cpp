@@ -109,7 +109,8 @@ bool BBInstrument::runOnModule(Module &M) {
     hook = writeFunc;
     Constant* coreConstant = M.getOrInsertFunction("sched_getcpu",Type::getInt32Ty(M.getContext()));
     coreFunc = cast<Function>(coreConstant);
-    //errs()<<*coreFunc<<"\n";
+
+    errs()<<*coreFunc<<"\n";
 
     std::set<BasicBlock*> BlocksToInstrument;
     NumBlocks = 0;
@@ -154,6 +155,27 @@ bool BBInstrument::runOnModule(Module &M) {
         this->GetCoreNum(M, firstInsOfBB);
         for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB)
         {
+            BasicBlock::iterator beginIte = BB->begin();
+            Instruction* beginInst = &*beginIte;
+            if(CallInst* isGetCPU = dyn_cast<CallInst>(beginInst))
+            {
+
+                  Function* callee = dyn_cast<Function>(isGetCPU->getCalledValue()->stripPointerCasts());
+                  if(callee->getName().startswith("sched_getcpu"))
+                  {
+                     ++beginIte;
+                     beginInst = &*(beginIte);
+                  }
+            }
+            else
+            {
+               while(isa<PHINode>(&*beginIte))
+               {
+                  ++beginIte;
+               }
+               beginInst = &*(beginIte);
+            }
+            this->IncrementCounterInBlock(M, beginInst, i++, Counters);
             for(BasicBlock::iterator IB = BB->begin(), IE = BB->end(); IB != IE; ++IB)
             {
                 Instruction* ins = &*IB;
@@ -164,18 +186,16 @@ bool BBInstrument::runOnModule(Module &M) {
                     if(callee->getName().startswith("__kmpc_fork_call"))
                     {
                         errs()<<*CI<<"\n";
-                        this->IncrementCounterInBlock(M, ins, i++, Counters);
                         ++IB;
                         Instruction* nextIns = &*IB;
                         this->GetCoreNum(M,nextIns);
+                        this->IncrementCounterInBlock(M, nextIns, i++, Counters);
                         --IB;
+
                     }
 
                 }
             }
-            Instruction* Term = BB->getTerminator();
-            //this->GetCoreNum(M,Term);
-            this->IncrementCounterInBlock(M, Term, i++, Counters);
         }
     }
 

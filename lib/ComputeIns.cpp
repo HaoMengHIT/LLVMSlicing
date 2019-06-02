@@ -171,6 +171,19 @@ void ComputeIns::judgeIsParallel(Module &M)
         errs()<<"=========="<<fname<<"\n";
         if (fname.find("WriteOpenMPProfile")!=fname.npos) continue;
         for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
+            for(BasicBlock::iterator IB = BB->begin(), IE = BB->end(); IB != IE; ++IB)
+            {
+                Instruction* ins = &*IB;
+                if(CallInst* CI = dyn_cast<CallInst>(ins))
+                {
+                    Function* callee = CI->getCalledFunction();
+                    if(callee->getName().startswith("__kmpc_fork_call"))
+                    {
+                        this->isParaRegion.push_back(0);
+                    }
+
+                }
+            }
             isBBParallel(M, &*BB);
         }
     }
@@ -334,6 +347,9 @@ void ComputeIns::getBBNum(Module &M){
 
 	int number = 0;
 	for(auto FB = M.begin(),FE = M.end(); FB!=FE ; ++FB){
+      if (FB->isDeclaration()) continue;
+        StringRef fname = FB->getName();
+        if (fname.find("WriteOpenMPProfile")!=fname.npos) continue;
 		for(auto BB = FB->begin(), BE = FB->end(); BB!=BE ; ++BB){
 			number ++;
 			for(auto IB = BB->begin(), IE = BB->end(); IB!=IE ;++IB){
@@ -446,6 +462,9 @@ void ComputeIns::getInsKind(Module &M){
 	int loadNum=0,storeNum=0,boNum=0;
 	vector<int> bb;
 	for(auto FB = M.begin(),FE = M.end(); FB!=FE ; ++FB){
+      if (FB->isDeclaration()) continue;
+      StringRef fname = FB->getName();
+      if (fname.find("WriteOpenMPProfile")!=fname.npos) continue;
 		for(auto BB = FB->begin(), BE = FB->end(); BB!=BE ; ++BB){
 		//				errs()<<*BB<<"\n";
 			for(auto IB = BB->begin(), IE = BB->end(); IB!=IE ; ++IB){
