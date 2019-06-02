@@ -253,6 +253,9 @@ void ComputeIns::getBinaryOPNum(Module &M){
 	int add=0,fadd=0,mul=0,fmul=0,sub=0,fsub=0,udiv=0,sdiv=0,fdiv=0,urem=0,srem=0,frem=0;	
 
 	for(auto FB = M.begin(),FE = M.end(); FB!=FE ; ++FB){
+      if (FB->isDeclaration()) continue;
+      StringRef fname = FB->getName();
+      if (fname.find("WriteOpenMPProfile")!=fname.npos) continue;
 		for(auto BB = FB->begin(), BE = FB->end(); BB!=BE ; ++BB){
 			for(auto IB = BB->begin(), IE = BB->end(); IB!=IE ; ++IB){
 				Instruction* ins = &*IB;

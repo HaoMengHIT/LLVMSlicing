@@ -3,9 +3,9 @@
 /home/haomeng/Projects/LLVMSlicing/build/include/CMakeFiles/rebuild_cache.dir
 /home/haomeng/Projects/LLVMSlicing/build/include/CMakeFiles/edit_cache.dir
 /home/haomeng/Projects/LLVMSlicing/build/lib/CMakeFiles/rebuild_cache.dir
-/home/haomeng/Projects/LLVMSlicing/build/lib/CMakeFiles/edit_cache.dir
 /home/haomeng/Projects/LLVMSlicing/build/lib/CMakeFiles/LLVMSlicing.dir
+/home/haomeng/Projects/LLVMSlicing/build/lib/CMakeFiles/edit_cache.dir
 /home/haomeng/Projects/LLVMSlicing/build/src/CMakeFiles/rebuild_cache.dir
 /home/haomeng/Projects/LLVMSlicing/build/src/CMakeFiles/edit_cache.dir
-/home/haomeng/Projects/LLVMSlicing/build/src/CMakeFiles/libfn-timing.dir
 /home/haomeng/Projects/LLVMSlicing/build/src/CMakeFiles/InstTiming.dir
+/home/haomeng/Projects/LLVMSlicing/build/src/CMakeFiles/libfn-timing.dir

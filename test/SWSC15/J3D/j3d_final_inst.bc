@@ -22,7 +22,7 @@ target triple = "x86_64-pc-linux-gnu"
 @.str.2.5 = private unnamed_addr constant [2 x i8] c"w\00", align 1
 @.str.3.6 = private unnamed_addr constant [17 x i8] c"open file wrong\0A\00", align 1
 @.str.4 = private unnamed_addr constant [5 x i8] c"%ld\09\00", align 1
-@BBCounters = internal global [2304 x i64] zeroinitializer
+@BBCounters = internal global [64 x i64] zeroinitializer
 
 ; Function Attrs: norecurse nounwind readnone uwtable
 define void @dummy_(double* nocapture, double* nocapture) local_unnamed_addr #0 {
@@ -30,7 +30,7 @@ define void @dummy_(double* nocapture, double* nocapture) local_unnamed_addr #0 
   %IndexSExt = sext i32 %3 to i64
   %IndexValMul = mul i64 %IndexSExt, 32
   %IndexValAdd = add i64 %IndexValMul, 0
-  %4 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
+  %4 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
   %OldBBCounter = load i64, i64* %4
   %NewBBCounter = add i64 %OldBBCounter, 1
   store i64 %NewBBCounter, i64* %4
@@ -43,7 +43,7 @@ define void @dummy(double* nocapture, double* nocapture) local_unnamed_addr #0 {
   %IndexSExt = sext i32 %3 to i64
   %IndexValMul = mul i64 %IndexSExt, 32
   %IndexValAdd = add i64 %IndexValMul, 1
-  %4 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
+  %4 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
   %OldBBCounter = load i64, i64* %4
   %NewBBCounter = add i64 %OldBBCounter, 1
   store i64 %NewBBCounter, i64* %4
@@ -56,7 +56,7 @@ define void @timing_(double* nocapture, double* nocapture) local_unnamed_addr #1
   %IndexSExt = sext i32 %3 to i64
   %IndexValMul = mul i64 %IndexSExt, 32
   %IndexValAdd = add i64 %IndexValMul, 2
-  %4 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
+  %4 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
   %OldBBCounter = load i64, i64* %4
   %NewBBCounter = add i64 %OldBBCounter, 1
   store i64 %NewBBCounter, i64* %4
@@ -70,7 +70,7 @@ define void @timing(double* nocapture, double* nocapture) local_unnamed_addr #1 
   %IndexSExt = sext i32 %3 to i64
   %IndexValMul = mul i64 %IndexSExt, 32
   %IndexValAdd = add i64 %IndexValMul, 3
-  %4 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
+  %4 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
   %OldBBCounter = load i64, i64* %4
   %NewBBCounter = add i64 %OldBBCounter, 1
   store i64 %NewBBCounter, i64* %4
@@ -82,24 +82,24 @@ define void @timing(double* nocapture, double* nocapture) local_unnamed_addr #1 
   call void @llvm.lifetime.start.p0i8(i64 144, i8* nonnull %8) #10
   %9 = call i32 @gettimeofday(%struct.timeval* nonnull %5, %struct.timezone* null) #10
   %10 = getelementptr inbounds %struct.timeval, %struct.timeval* %5, i64 0, i32 0
-  %11 = load i64, i64* %10, align 8, !tbaa !2
+  %11 = load i64, i64* %10, align 8, !tbaa !3
   %12 = sitofp i64 %11 to double
   %13 = getelementptr inbounds %struct.timeval, %struct.timeval* %5, i64 0, i32 1
-  %14 = load i64, i64* %13, align 8, !tbaa !7
+  %14 = load i64, i64* %13, align 8, !tbaa !8
   %15 = sitofp i64 %14 to double
   %16 = fdiv double %15, 1.000000e+06
   %17 = fadd double %16, %12
-  store double %17, double* %0, align 8, !tbaa !8
+  store double %17, double* %0, align 8, !tbaa !9
   %18 = call i32 @getrusage(i32 0, %struct.rusage* nonnull %6) #10
   %19 = getelementptr inbounds %struct.rusage, %struct.rusage* %6, i64 0, i32 0, i32 0
-  %20 = load i64, i64* %19, align 8, !tbaa !10
+  %20 = load i64, i64* %19, align 8, !tbaa !11
   %21 = sitofp i64 %20 to double
   %22 = getelementptr inbounds %struct.rusage, %struct.rusage* %6, i64 0, i32 0, i32 1
-  %23 = load i64, i64* %22, align 8, !tbaa !12
+  %23 = load i64, i64* %22, align 8, !tbaa !13
   %24 = sitofp i64 %23 to double
   %25 = fdiv double %24, 1.000000e+06
   %26 = fadd double %25, %21
-  store double %26, double* %1, align 8, !tbaa !8
+  store double %26, double* %1, align 8, !tbaa !9
   call void @llvm.lifetime.end.p0i8(i64 144, i8* nonnull %8) #10
   call void @llvm.lifetime.end.p0i8(i64 16, i8* nonnull %7) #10
   ret void
@@ -123,7 +123,7 @@ define void @jacobi_line(double* nocapture, double* nocapture readonly, double* 
   %IndexSExt = sext i32 %9 to i64
   %IndexValMul = mul i64 %IndexSExt, 32
   %IndexValAdd = add i64 %IndexValMul, 4
-  %10 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
+  %10 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
   %OldBBCounter = load i64, i64* %10
   %NewBBCounter = add i64 %OldBBCounter, 1
   store i64 %NewBBCounter, i64* %10
@@ -134,7 +134,7 @@ define void @jacobi_line(double* nocapture, double* nocapture readonly, double* 
   %IndexSExt1 = sext i32 %9 to i64
   %IndexValMul2 = mul i64 %IndexSExt1, 32
   %IndexValAdd3 = add i64 %IndexValMul2, 5
-  %13 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd3
+  %13 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd3
   %OldBBCounter4 = load i64, i64* %13
   %NewBBCounter5 = add i64 %OldBBCounter4, 1
   store i64 %NewBBCounter5, i64* %13
@@ -147,38 +147,38 @@ define void @jacobi_line(double* nocapture, double* nocapture readonly, double* 
   %IndexSExt6 = sext i32 %9 to i64
   %IndexValMul7 = mul i64 %IndexSExt6, 32
   %IndexValAdd8 = add i64 %IndexValMul7, 6
-  %18 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd8
+  %18 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd8
   %OldBBCounter9 = load i64, i64* %18
   %NewBBCounter10 = add i64 %OldBBCounter9, 1
   store i64 %NewBBCounter10, i64* %18
   %19 = getelementptr inbounds double, double* %6, i64 %17
-  %20 = load double, double* %19, align 8, !tbaa !8
+  %20 = load double, double* %19, align 8, !tbaa !9
   %21 = getelementptr inbounds double, double* %1, i64 %17
-  %22 = load double, double* %21, align 8, !tbaa !8
+  %22 = load double, double* %21, align 8, !tbaa !9
   %23 = fmul double %20, %22
   %24 = add nsw i64 %17, -1
   %25 = getelementptr inbounds double, double* %1, i64 %24
-  %26 = load double, double* %25, align 8, !tbaa !8
+  %26 = load double, double* %25, align 8, !tbaa !9
   %27 = fadd double %23, %26
   %28 = add nuw nsw i64 %17, 1
   %29 = getelementptr inbounds double, double* %1, i64 %28
-  %30 = load double, double* %29, align 8, !tbaa !8
+  %30 = load double, double* %29, align 8, !tbaa !9
   %31 = fadd double %27, %30
   %32 = getelementptr inbounds double, double* %2, i64 %17
-  %33 = load double, double* %32, align 8, !tbaa !8
+  %33 = load double, double* %32, align 8, !tbaa !9
   %34 = fadd double %31, %33
   %35 = getelementptr inbounds double, double* %3, i64 %17
-  %36 = load double, double* %35, align 8, !tbaa !8
+  %36 = load double, double* %35, align 8, !tbaa !9
   %37 = fadd double %34, %36
   %38 = getelementptr inbounds double, double* %4, i64 %17
-  %39 = load double, double* %38, align 8, !tbaa !8
+  %39 = load double, double* %38, align 8, !tbaa !9
   %40 = fadd double %37, %39
   %41 = getelementptr inbounds double, double* %5, i64 %17
-  %42 = load double, double* %41, align 8, !tbaa !8
+  %42 = load double, double* %41, align 8, !tbaa !9
   %43 = fadd double %40, %42
   %44 = fdiv double %43, 6.000000e+00
   %45 = getelementptr inbounds double, double* %0, i64 %17
-  store double %44, double* %45, align 8, !tbaa !8
+  store double %44, double* %45, align 8, !tbaa !9
   %46 = icmp eq i64 %28, %15
   br i1 %46, label %47, label %16
 
@@ -186,7 +186,7 @@ define void @jacobi_line(double* nocapture, double* nocapture readonly, double* 
   %IndexSExt11 = sext i32 %9 to i64
   %IndexValMul12 = mul i64 %IndexSExt11, 32
   %IndexValAdd13 = add i64 %IndexValMul12, 7
-  %48 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd13
+  %48 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd13
   %OldBBCounter14 = load i64, i64* %48
   %NewBBCounter15 = add i64 %OldBBCounter14, 1
   store i64 %NewBBCounter15, i64* %48
@@ -199,7 +199,7 @@ define i32 @main(i32, i8** nocapture readonly) local_unnamed_addr #1 {
   %IndexSExt = sext i32 %3 to i64
   %IndexValMul = mul i64 %IndexSExt, 32
   %IndexValAdd = add i64 %IndexValMul, 8
-  %4 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
+  %4 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
   %OldBBCounter = load i64, i64* %4
   %NewBBCounter = add i64 %OldBBCounter, 1
   store i64 %NewBBCounter, i64* %4
@@ -240,11 +240,11 @@ define i32 @main(i32, i8** nocapture readonly) local_unnamed_addr #1 {
   %IndexSExt1 = sext i32 %3 to i64
   %IndexValMul2 = mul i64 %IndexSExt1, 32
   %IndexValAdd3 = add i64 %IndexValMul2, 9
-  %27 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd3
+  %27 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd3
   %OldBBCounter4 = load i64, i64* %27
   %NewBBCounter5 = add i64 %OldBBCounter4, 1
   store i64 %NewBBCounter5, i64* %27
-  %28 = load i8*, i8** %1, align 8, !tbaa !13
+  %28 = load i8*, i8** %1, align 8, !tbaa !14
   %29 = tail call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([18 x i8], [18 x i8]* @.str, i64 0, i64 0), i8* %28)
   tail call void @exit(i32 1) #11
   unreachable
@@ -253,31 +253,31 @@ define i32 @main(i32, i8** nocapture readonly) local_unnamed_addr #1 {
   %IndexSExt6 = sext i32 %3 to i64
   %IndexValMul7 = mul i64 %IndexSExt6, 32
   %IndexValAdd8 = add i64 %IndexValMul7, 10
-  %31 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd8
+  %31 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd8
   %OldBBCounter9 = load i64, i64* %31
   %NewBBCounter10 = add i64 %OldBBCounter9, 1
   store i64 %NewBBCounter10, i64* %31
   %32 = getelementptr inbounds i8*, i8** %1, i64 1
-  %33 = load i8*, i8** %32, align 8, !tbaa !13
+  %33 = load i8*, i8** %32, align 8, !tbaa !14
   %34 = tail call i32 @atoi(i8* %33) #12
-  store i32 %34, i32* %9, align 4, !tbaa !15
+  store i32 %34, i32* %9, align 4, !tbaa !16
   %35 = sext i32 %34 to i64
   %36 = shl nsw i64 %35, 3
   %37 = mul i64 %36, %35
   %38 = mul i64 %37, %35
   %39 = tail call noalias i8* @malloc(i64 %38) #10
   %40 = bitcast [2 x double*]* %13 to i8**
-  store i8* %39, i8** %40, align 16, !tbaa !13
+  store i8* %39, i8** %40, align 16, !tbaa !14
   %41 = tail call noalias i8* @malloc(i64 %38) #10
   %42 = getelementptr inbounds [2 x double*], [2 x double*]* %13, i64 0, i64 1
   %43 = bitcast double** %42 to i8**
-  store i8* %41, i8** %43, align 8, !tbaa !13
+  store i8* %41, i8** %43, align 8, !tbaa !14
   %44 = tail call noalias i8* @malloc(i64 %38) #10
   %45 = bitcast double** %14 to i8**
-  store i8* %44, i8** %45, align 8, !tbaa !13
-  store i32 0, i32* %11, align 4, !tbaa !15
-  store i32 1, i32* %12, align 4, !tbaa !15
-  store i32 0, i32* %10, align 4, !tbaa !15
+  store i8* %44, i8** %45, align 8, !tbaa !14
+  store i32 0, i32* %11, align 4, !tbaa !16
+  store i32 1, i32* %12, align 4, !tbaa !16
+  store i32 0, i32* %10, align 4, !tbaa !16
   %46 = icmp sgt i32 %34, 0
   br i1 %46, label %47, label %89
 
@@ -285,7 +285,7 @@ define i32 @main(i32, i8** nocapture readonly) local_unnamed_addr #1 {
   %IndexSExt11 = sext i32 %3 to i64
   %IndexValMul12 = mul i64 %IndexSExt11, 32
   %IndexValAdd13 = add i64 %IndexValMul12, 11
-  %48 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd13
+  %48 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd13
   %OldBBCounter14 = load i64, i64* %48
   %NewBBCounter15 = add i64 %OldBBCounter14, 1
   store i64 %NewBBCounter15, i64* %48
@@ -302,7 +302,7 @@ define i32 @main(i32, i8** nocapture readonly) local_unnamed_addr #1 {
   %IndexSExt16 = sext i32 %3 to i64
   %IndexValMul17 = mul i64 %IndexSExt16, 32
   %IndexValAdd18 = add i64 %IndexValMul17, 12
-  %57 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd18
+  %57 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd18
   %OldBBCounter19 = load i64, i64* %57
   %NewBBCounter20 = add i64 %OldBBCounter19, 1
   store i64 %NewBBCounter20, i64* %57
@@ -315,7 +315,7 @@ define i32 @main(i32, i8** nocapture readonly) local_unnamed_addr #1 {
   %IndexSExt21 = sext i32 %3 to i64
   %IndexValMul22 = mul i64 %IndexSExt21, 32
   %IndexValAdd23 = add i64 %IndexValMul22, 13
-  %62 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd23
+  %62 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd23
   %OldBBCounter24 = load i64, i64* %62
   %NewBBCounter25 = add i64 %OldBBCounter24, 1
   store i64 %NewBBCounter25, i64* %62
@@ -333,17 +333,17 @@ define i32 @main(i32, i8** nocapture readonly) local_unnamed_addr #1 {
   %IndexSExt26 = sext i32 %3 to i64
   %IndexValMul27 = mul i64 %IndexSExt26, 32
   %IndexValAdd28 = add i64 %IndexValMul27, 14
-  %72 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd28
+  %72 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd28
   %OldBBCounter29 = load i64, i64* %72
   %NewBBCounter30 = add i64 %OldBBCounter29, 1
   store i64 %NewBBCounter30, i64* %72
   %73 = add nsw i64 %71, %69
   %74 = getelementptr inbounds double, double* %50, i64 %73
-  store double %68, double* %74, align 8, !tbaa !8
+  store double %68, double* %74, align 8, !tbaa !9
   %75 = getelementptr inbounds double, double* %51, i64 %73
-  store double %68, double* %75, align 8, !tbaa !8
+  store double %68, double* %75, align 8, !tbaa !9
   %76 = getelementptr inbounds double, double* %52, i64 %73
-  store double %68, double* %76, align 8, !tbaa !8
+  store double %68, double* %76, align 8, !tbaa !9
   %77 = add nuw nsw i64 %71, 1
   %78 = icmp eq i64 %77, %53
   br i1 %78, label %79, label %70
@@ -352,7 +352,7 @@ define i32 @main(i32, i8** nocapture readonly) local_unnamed_addr #1 {
   %IndexSExt31 = sext i32 %3 to i64
   %IndexValMul32 = mul i64 %IndexSExt31, 32
   %IndexValAdd33 = add i64 %IndexValMul32, 15
-  %80 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd33
+  %80 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd33
   %OldBBCounter34 = load i64, i64* %80
   %NewBBCounter35 = add i64 %OldBBCounter34, 1
   store i64 %NewBBCounter35, i64* %80
@@ -364,7 +364,7 @@ define i32 @main(i32, i8** nocapture readonly) local_unnamed_addr #1 {
   %IndexSExt36 = sext i32 %3 to i64
   %IndexValMul37 = mul i64 %IndexSExt36, 32
   %IndexValAdd38 = add i64 %IndexValMul37, 16
-  %84 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd38
+  %84 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd38
   %OldBBCounter39 = load i64, i64* %84
   %NewBBCounter40 = add i64 %OldBBCounter39, 1
   store i64 %NewBBCounter40, i64* %84
@@ -376,18 +376,18 @@ define i32 @main(i32, i8** nocapture readonly) local_unnamed_addr #1 {
   %IndexSExt41 = sext i32 %3 to i64
   %IndexValMul42 = mul i64 %IndexSExt41, 32
   %IndexValAdd43 = add i64 %IndexValMul42, 17
-  %88 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd43
+  %88 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd43
   %OldBBCounter44 = load i64, i64* %88
   %NewBBCounter45 = add i64 %OldBBCounter44, 1
   store i64 %NewBBCounter45, i64* %88
-  store i32 %34, i32* %10, align 4, !tbaa !15
+  store i32 %34, i32* %10, align 4, !tbaa !16
   br label %89
 
 ; <label>:89:                                     ; preds = %87, %30
   %IndexSExt46 = sext i32 %3 to i64
   %IndexValMul47 = mul i64 %IndexSExt46, 32
   %IndexValAdd48 = add i64 %IndexValMul47, 18
-  %90 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd48
+  %90 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd48
   %OldBBCounter49 = load i64, i64* %90
   %NewBBCounter50 = add i64 %OldBBCounter49, 1
   store i64 %NewBBCounter50, i64* %90
@@ -399,7 +399,7 @@ define i32 @main(i32, i8** nocapture readonly) local_unnamed_addr #1 {
   %IndexSExt51 = sext i32 %3 to i64
   %IndexValMul52 = mul i64 %IndexSExt51, 32
   %IndexValAdd53 = add i64 %IndexValMul52, 19
-  %93 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd53
+  %93 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd53
   %OldBBCounter54 = load i64, i64* %93
   %NewBBCounter55 = add i64 %OldBBCounter54, 1
   store i64 %NewBBCounter55, i64* %93
@@ -408,7 +408,7 @@ define i32 @main(i32, i8** nocapture readonly) local_unnamed_addr #1 {
   %IndexSExt56 = sext i32 %94 to i64
   %IndexValMul57 = mul i64 %IndexSExt56, 32
   %IndexValAdd58 = add i64 %IndexValMul57, 20
-  %95 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd58
+  %95 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd58
   %OldBBCounter59 = load i64, i64* %95
   %NewBBCounter60 = add i64 %OldBBCounter59, 1
   store i64 %NewBBCounter60, i64* %95
@@ -420,15 +420,15 @@ define i32 @main(i32, i8** nocapture readonly) local_unnamed_addr #1 {
   %IndexSExt61 = sext i32 %94 to i64
   %IndexValMul62 = mul i64 %IndexSExt61, 32
   %IndexValAdd63 = add i64 %IndexValMul62, 21
-  %99 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd63
+  %99 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd63
   %OldBBCounter64 = load i64, i64* %99
   %NewBBCounter65 = add i64 %OldBBCounter64, 1
   store i64 %NewBBCounter65, i64* %99
   call void @timing(double* nonnull %6, double* nonnull %8) #10
-  %100 = load double, double* %6, align 8, !tbaa !8
-  %101 = load double, double* %5, align 8, !tbaa !8
+  %100 = load double, double* %6, align 8, !tbaa !9
+  %101 = load double, double* %5, align 8, !tbaa !9
   %102 = fsub double %100, %101
-  %103 = load i32, i32* %9, align 4, !tbaa !15
+  %103 = load i32, i32* %9, align 4, !tbaa !16
   %104 = add nsw i32 %103, -2
   %105 = sitofp i32 %104 to double
   %106 = fmul double %105, 1.000000e+02
@@ -447,7 +447,7 @@ define i32 @main(i32, i8** nocapture readonly) local_unnamed_addr #1 {
   call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %17) #10
   call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %16) #10
   call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %15) #10
-  call void @_Z18WriteOpenMPProfilePll(i64* getelementptr inbounds ([2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 0), i64 2304)
+  call void @_Z18WriteOpenMPProfilePll(i64* getelementptr inbounds ([64 x i64], [64 x i64]* @BBCounters, i64 0, i64 0), i64 64)
   ret i32 0
 }
 
@@ -463,7 +463,7 @@ define available_externally i32 @atoi(i8* nonnull) local_unnamed_addr #6 {
   %IndexSExt = sext i32 %2 to i64
   %IndexValMul = mul i64 %IndexSExt, 32
   %IndexValAdd = add i64 %IndexValMul, 22
-  %3 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
+  %3 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
   %OldBBCounter = load i64, i64* %3
   %NewBBCounter = add i64 %OldBBCounter, 1
   store i64 %NewBBCounter, i64* %3
@@ -481,7 +481,7 @@ define internal void @.omp_outlined.(i32* noalias nocapture readonly, i32* noali
   %IndexSExt = sext i32 %9 to i64
   %IndexValMul = mul i64 %IndexSExt, 32
   %IndexValAdd = add i64 %IndexValMul, 23
-  %10 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
+  %10 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
   %OldBBCounter = load i64, i64* %10
   %NewBBCounter = add i64 %OldBBCounter, 1
   store i64 %NewBBCounter, i64* %10
@@ -489,7 +489,7 @@ define internal void @.omp_outlined.(i32* noalias nocapture readonly, i32* noali
   %12 = alloca i32, align 4
   %13 = alloca i32, align 4
   %14 = alloca i32, align 4
-  %15 = load i32, i32* %3, align 4, !tbaa !15
+  %15 = load i32, i32* %3, align 4, !tbaa !16
   %16 = add nsw i32 %15, -3
   %17 = icmp sgt i32 %15, 2
   br i1 %17, label %18, label %83
@@ -498,29 +498,29 @@ define internal void @.omp_outlined.(i32* noalias nocapture readonly, i32* noali
   %IndexSExt1 = sext i32 %9 to i64
   %IndexValMul2 = mul i64 %IndexSExt1, 32
   %IndexValAdd3 = add i64 %IndexValMul2, 24
-  %19 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd3
+  %19 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd3
   %OldBBCounter4 = load i64, i64* %19
   %NewBBCounter5 = add i64 %OldBBCounter4, 1
   store i64 %NewBBCounter5, i64* %19
   %20 = bitcast i32* %11 to i8*
   call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %20) #10
-  store i32 0, i32* %11, align 4, !tbaa !15
+  store i32 0, i32* %11, align 4, !tbaa !16
   %21 = bitcast i32* %12 to i8*
   call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %21) #10
-  store i32 %16, i32* %12, align 4, !tbaa !15
+  store i32 %16, i32* %12, align 4, !tbaa !16
   %22 = bitcast i32* %13 to i8*
   call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %22) #10
-  store i32 1, i32* %13, align 4, !tbaa !15
+  store i32 1, i32* %13, align 4, !tbaa !16
   %23 = bitcast i32* %14 to i8*
   call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %23) #10
-  store i32 0, i32* %14, align 4, !tbaa !15
-  %24 = load i32, i32* %0, align 4, !tbaa !15
+  store i32 0, i32* %14, align 4, !tbaa !16
+  %24 = load i32, i32* %0, align 4, !tbaa !16
   call void @__kmpc_for_static_init_4(%ident_t* nonnull @1, i32 %24, i32 34, i32* nonnull %14, i32* nonnull %11, i32* nonnull %12, i32* nonnull %13, i32 1, i32 1) #10
-  %25 = load i32, i32* %12, align 4, !tbaa !15
+  %25 = load i32, i32* %12, align 4, !tbaa !16
   %26 = icmp sgt i32 %25, %16
   %27 = select i1 %26, i32 %16, i32 %25
-  store i32 %27, i32* %12, align 4, !tbaa !15
-  %28 = load i32, i32* %11, align 4, !tbaa !15
+  store i32 %27, i32* %12, align 4, !tbaa !16
+  %28 = load i32, i32* %11, align 4, !tbaa !16
   %29 = icmp sgt i32 %28, %27
   br i1 %29, label %81, label %30
 
@@ -528,7 +528,7 @@ define internal void @.omp_outlined.(i32* noalias nocapture readonly, i32* noali
   %IndexSExt6 = sext i32 %9 to i64
   %IndexValMul7 = mul i64 %IndexSExt6, 32
   %IndexValAdd8 = add i64 %IndexValMul7, 25
-  %31 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd8
+  %31 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd8
   %OldBBCounter9 = load i64, i64* %31
   %NewBBCounter10 = add i64 %OldBBCounter9, 1
   store i64 %NewBBCounter10, i64* %31
@@ -539,12 +539,12 @@ define internal void @.omp_outlined.(i32* noalias nocapture readonly, i32* noali
   %IndexSExt11 = sext i32 %9 to i64
   %IndexValMul12 = mul i64 %IndexSExt11, 32
   %IndexValAdd13 = add i64 %IndexValMul12, 26
-  %34 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd13
+  %34 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd13
   %OldBBCounter14 = load i64, i64* %34
   %NewBBCounter15 = add i64 %OldBBCounter14, 1
   store i64 %NewBBCounter15, i64* %34
   %35 = add nsw i32 %33, 1
-  %36 = load i32, i32* %3, align 4, !tbaa !15
+  %36 = load i32, i32* %3, align 4, !tbaa !16
   %37 = icmp sgt i32 %36, 2
   br i1 %37, label %38, label %77
 
@@ -552,7 +552,7 @@ define internal void @.omp_outlined.(i32* noalias nocapture readonly, i32* noali
   %IndexSExt16 = sext i32 %9 to i64
   %IndexValMul17 = mul i64 %IndexSExt16, 32
   %IndexValAdd18 = add i64 %IndexValMul17, 27
-  %39 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd18
+  %39 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd18
   %OldBBCounter19 = load i64, i64* %39
   %NewBBCounter20 = add i64 %OldBBCounter19, 1
   store i64 %NewBBCounter20, i64* %39
@@ -564,23 +564,23 @@ define internal void @.omp_outlined.(i32* noalias nocapture readonly, i32* noali
   %IndexSExt21 = sext i32 %9 to i64
   %IndexValMul22 = mul i64 %IndexSExt21, 32
   %IndexValAdd23 = add i64 %IndexValMul22, 28
-  %43 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd23
+  %43 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd23
   %OldBBCounter24 = load i64, i64* %43
   %NewBBCounter25 = add i64 %OldBBCounter24, 1
   store i64 %NewBBCounter25, i64* %43
   %44 = mul nsw i32 %41, %35
   %45 = add i32 %44, %42
   %46 = mul i32 %45, %41
-  %47 = load i32, i32* %5, align 4, !tbaa !15
+  %47 = load i32, i32* %5, align 4, !tbaa !16
   %48 = sext i32 %47 to i64
   %49 = getelementptr inbounds [2 x double*], [2 x double*]* %4, i64 0, i64 %48
-  %50 = load double*, double** %49, align 8, !tbaa !13
+  %50 = load double*, double** %49, align 8, !tbaa !14
   %51 = sext i32 %46 to i64
   %52 = getelementptr inbounds double, double* %50, i64 %51
-  %53 = load i32, i32* %6, align 4, !tbaa !15
+  %53 = load i32, i32* %6, align 4, !tbaa !16
   %54 = sext i32 %53 to i64
   %55 = getelementptr inbounds [2 x double*], [2 x double*]* %4, i64 0, i64 %54
-  %56 = load double*, double** %55, align 8, !tbaa !13
+  %56 = load double*, double** %55, align 8, !tbaa !14
   %57 = getelementptr inbounds double, double* %56, i64 %51
   %58 = add nsw i32 %46, %41
   %59 = sext i32 %58 to i64
@@ -595,11 +595,11 @@ define internal void @.omp_outlined.(i32* noalias nocapture readonly, i32* noali
   %68 = sub nsw i32 %46, %64
   %69 = sext i32 %68 to i64
   %70 = getelementptr inbounds double, double* %56, i64 %69
-  %71 = load double*, double** %7, align 8, !tbaa !13
+  %71 = load double*, double** %7, align 8, !tbaa !14
   %72 = getelementptr inbounds double, double* %71, i64 %51
   call void @jacobi_line(double* %52, double* %57, double* %60, double* %63, double* %67, double* %70, double* %72, i32 %41)
   %73 = add nuw nsw i32 %42, 1
-  %74 = load i32, i32* %3, align 4, !tbaa !15
+  %74 = load i32, i32* %3, align 4, !tbaa !16
   %75 = add nsw i32 %74, -1
   %76 = icmp slt i32 %73, %75
   br i1 %76, label %40, label %77
@@ -608,11 +608,11 @@ define internal void @.omp_outlined.(i32* noalias nocapture readonly, i32* noali
   %IndexSExt26 = sext i32 %9 to i64
   %IndexValMul27 = mul i64 %IndexSExt26, 32
   %IndexValAdd28 = add i64 %IndexValMul27, 29
-  %78 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd28
+  %78 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd28
   %OldBBCounter29 = load i64, i64* %78
   %NewBBCounter30 = add i64 %OldBBCounter29, 1
   store i64 %NewBBCounter30, i64* %78
-  %79 = load i32, i32* %12, align 4, !tbaa !15
+  %79 = load i32, i32* %12, align 4, !tbaa !16
   %80 = icmp slt i32 %33, %79
   br i1 %80, label %32, label %81
 
@@ -620,7 +620,7 @@ define internal void @.omp_outlined.(i32* noalias nocapture readonly, i32* noali
   %IndexSExt31 = sext i32 %9 to i64
   %IndexValMul32 = mul i64 %IndexSExt31, 32
   %IndexValAdd33 = add i64 %IndexValMul32, 30
-  %82 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd33
+  %82 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd33
   %OldBBCounter34 = load i64, i64* %82
   %NewBBCounter35 = add i64 %OldBBCounter34, 1
   store i64 %NewBBCounter35, i64* %82
@@ -631,7 +631,7 @@ define internal void @.omp_outlined.(i32* noalias nocapture readonly, i32* noali
   %IndexSExt36 = sext i32 %9 to i64
   %IndexValMul37 = mul i64 %IndexSExt36, 32
   %IndexValAdd38 = add i64 %IndexValMul37, 31
-  %84 = getelementptr [2304 x i64], [2304 x i64]* @BBCounters, i64 0, i64 %IndexValAdd38
+  %84 = getelementptr [64 x i64], [64 x i64]* @BBCounters, i64 0, i64 %IndexValAdd38
   %OldBBCounter39 = load i64, i64* %84
   %NewBBCounter40 = add i64 %OldBBCounter39, 1
   store i64 %NewBBCounter40, i64* %84
@@ -754,23 +754,24 @@ attributes #10 = { nounwind }
 attributes #11 = { noreturn nounwind }
 attributes #12 = { nounwind readonly }
 
-!llvm.ident = !{!0, !0, !0, !0}
-!llvm.module.flags = !{!1}
+!llvm.ident = !{!0, !0, !0, !1}
+!llvm.module.flags = !{!2}
 
-!0 = !{!"clang version 6.0.0-1ubuntu2~16.04.1 (tags/RELEASE_600/final)"}
-!1 = !{i32 1, !"wchar_size", i32 4}
-!2 = !{!3, !4, i64 0}
-!3 = !{!"timeval", !4, i64 0, !4, i64 8}
-!4 = !{!"long", !5, i64 0}
-!5 = !{!"omnipotent char", !6, i64 0}
-!6 = !{!"Simple C/C++ TBAA"}
-!7 = !{!3, !4, i64 8}
-!8 = !{!9, !9, i64 0}
-!9 = !{!"double", !5, i64 0}
-!10 = !{!11, !4, i64 0}
-!11 = !{!"rusage", !3, i64 0, !3, i64 16, !5, i64 32, !5, i64 40, !5, i64 48, !5, i64 56, !5, i64 64, !5, i64 72, !5, i64 80, !5, i64 88, !5, i64 96, !5, i64 104, !5, i64 112, !5, i64 120, !5, i64 128, !5, i64 136}
-!12 = !{!11, !4, i64 8}
-!13 = !{!14, !14, i64 0}
-!14 = !{!"any pointer", !5, i64 0}
-!15 = !{!16, !16, i64 0}
-!16 = !{!"int", !5, i64 0}
+!0 = !{!"clang version 6.0.0-1ubuntu2 (tags/RELEASE_600/final)"}
+!1 = !{!"clang version 6.0.0-1ubuntu2~16.04.1 (tags/RELEASE_600/final)"}
+!2 = !{i32 1, !"wchar_size", i32 4}
+!3 = !{!4, !5, i64 0}
+!4 = !{!"timeval", !5, i64 0, !5, i64 8}
+!5 = !{!"long", !6, i64 0}
+!6 = !{!"omnipotent char", !7, i64 0}
+!7 = !{!"Simple C/C++ TBAA"}
+!8 = !{!4, !5, i64 8}
+!9 = !{!10, !10, i64 0}
+!10 = !{!"double", !6, i64 0}
+!11 = !{!12, !5, i64 0}
+!12 = !{!"rusage", !4, i64 0, !4, i64 16, !6, i64 32, !6, i64 40, !6, i64 48, !6, i64 56, !6, i64 64, !6, i64 72, !6, i64 80, !6, i64 88, !6, i64 96, !6, i64 104, !6, i64 112, !6, i64 120, !6, i64 128, !6, i64 136}
+!13 = !{!12, !5, i64 8}
+!14 = !{!15, !15, i64 0}
+!15 = !{!"any pointer", !6, i64 0}
+!16 = !{!17, !17, i64 0}
+!17 = !{!"int", !6, i64 0}
