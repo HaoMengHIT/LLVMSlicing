@@ -9,7 +9,7 @@ void dummy(double*, double*);
 
 const double oos=1./6.;
 
-void jacobi_line(double* d, const double* s,
+static inline void jacobi_line(double* d, const double* s,
                  const double* top, const double* bottom,
                  const double* front, const double* back, 
                  const double* f, int n) {
@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
   // time measurement
   timing(&wct_start, &cput_start);
   for(n=0; n<iter; n++) {
-#pragma omp parallel for private(j,ofs)
+#pragma omp parallel for private(i,j,ofs)
     for(i=1; i<size-1; ++i) {
       for(j=1; j<size-1; ++j) {
         ofs = i*size*size + j*size;

@@ -1,0 +1,525 @@
+\chapter{Example Parallel Problems}
+\label{probs}
+
+\section{Rationale}
+The solutions to each of the following problems illustrate how the notion function rank both
+provides advantages in approaching different forms of exploitable concurrency, 
+as well as allows for extensions to similar problems in higher dimensions easily, safely, and often automatically.
+For each of these problems, there is a trivial extension into a higher dimension: 
+gather several rank $n$ inputs to the problem into a rank $n+1$ collection 
+and use the parallel rank operator to evaluate each of these inputs concurrently.
+By specifying that the original function operates on rank $n$ elements, 
+this extension is done automatically. 
+However, each section also discusses, when appropriate, 
+the usefulness of function rank when the extension is more complicated.
+Solutions for each of the problems in the following sections using the partial implementation of the Parallel-J system
+are given in Appendix \ref{apsol}.
+
+To demonstrate the usefulness of function rank, 
+the problems were chosen so as to illustrate different kinds of \textit{parallel design patterns}. 
+\textit{Design Patterns} are general, reusable solutions to a common class of problems. % TODO cite? (from Wikipedia)
+Software design patterns were first made popular for object-oriented programming through 
+the work of the ``Gang of Four''\cite{designp},
+and are now seeing interest for applications in parallel computing\cite{mass}.
+This research has chosen to focus on the pattern language developed by Mattson et al. 
+presented in their book, \textit{Patterns for Parallel Programming}\cite{mass}. % TODO justify?
+Using parallel design patterns to guide the choices and discussion of these problems 
+should allow this limited selection of problems to better represent families of parallel problems.
+
+\section{Calculating Pi with Numerical Integration}
+\subsection{Description}
+One method of calculating $\pi$ is to find the area under 
+the curve of the equation $frac{1}{1+x^2}$ on the interval $[0,1]$.
+This can be done with the integral in Eq~\ref{eq::pi_int}.
+
+\begin{equation} \label{eq::pi_int}
+\pi = \int_0^1 \frac{4}{1 + x^2} \; dx
+\end{equation}
+
+\noindent One way to approximate this integral is using a left-handed Riemann sum. 
+This method works by dividing the desired interval into $n$ sub intervals, 
+evaluating the function of concern at the left hand side of the interval, called $x_i$ (where $0 \le i < n$), 
+and approximates the are underneath the curve by finding the area of a rectangle 
+whose width is the width of the interval and height the value of the function at $x_i$.
+
+\[\frac{1}{n} \cdot \sum_{i=0}^n \frac{4}{1 + x^2}, x = \frac{i}{n} \]
+
+\subsection{Relevant Design Pattern}
+This problem was chosen to represent the \textit{Task Parallelism} pattern, 
+in which ``the problem is decomposed into a collection of tasks that can execute concurrently''\cite{mass}.
+In this problem, the concurrent tasks are calculating $\frac{4}{1 + x^2}$ for the different values of $x$. 
+There is also a task dependency: the multiplication of $\frac{1}{n}$ and the sum of the values produced by each task 
+cannot occur until all tasks have finished. 
+This task, which is a reduction on addition, can also be executed in parallel, 
+with sub-tasks summing the resulting areas concurrently.
+Each individual task of calculating the area of a rectangle takes roughly the same amount of time, as well, 
+meaning no sophisticated scheduling is required in order to exploit concurrency effectively for large $n$.
+
+\subsection{Solutions}
+\subsubsection{C with OpenMP}
+Fig~\ref{fig::num-int-par.c} shows a parallel solution to this problem in C using OpenMP, 
+based on the solution given in Appendix A of Mattson et al.\cite{mass}.
+This solution parallelizes the for loop; 
+i.e., it distributes iterations of the loop among threads to execute concurrently.
+The program specifies both that \texttt{x} is a temporary work variable and so should not be shared among threads, 
+and that there is to be a reduction on the variable \texttt{sum} with addition. 
+Since the entire body of the for loop is parallelized, including the update of \texttt{sum}, 
+the annotations notifying the compiler of the reduction and private work variable is critical; 
+otherwise, there could very well be race conditions.
+
+\begin{figure}[h]
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\framebox[\linewidth][l]{
+\BVerbatimInput{num-int-par.c}
+}
+\end{small}
+\end{singlespacing}
+\end{quote}
+\caption{Calculating $\pi$ using numerical integration in C with OpenMP}
+\label{fig::num-int-par.c}
+\end{figure}
+
+\subsubsection{J}
+Fig~\ref{fig::num-int-pi.ijs} gives a sequential J solution to the problem, 
+with some definitions to facilitate a discussion 
+of the behavior of a solution in the proposed Parallel-J. 
+The operators \texttt{p\_rank} and \texttt{p\_insert}
+are defined as the normal rank and insert operators, respectively,  
+but are included to demonstrate where parallelism would be exploited in a parallel implementation of J.
+
+\begin{figure}[h]
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\framebox[\linewidth][l]{
+\BVerbatimInput{num_int_pi.ijs}
+}
+\end{small}
+\end{singlespacing}
+\end{quote}
+\caption{Calculating $\pi$ using numerical integration in J}
+\label{fig::num-int-pi.ijs}
+\end{figure}
+
+This solution works conceptually by taking the for loop from the previous C solution 
+and expanding it into an array, generated by \texttt{xs}.
+Operations which were done in the body of the C for loop 
+are instead expressed as operations on the whole array. 
+Because J is functional, and 
+because it allows the programmer to express collective rather than item-by-item operations, 
+the need for the temporary work variable \texttt{x} used in the previous solution, 
+a potential source of race conditions and thus error, is eliminated. 
+
+Similarly, whereas the C solution required 
+protecting against race conditions when reducing on the \texttt{sum} variable
+by giving compiler annotations, 
+in the J solution race conditions could be avoided altogether.
+Either the \texttt{sum} operation would be safely parallel with \texttt{\::} or 
+it would be sequential with \texttt{/}.
+
+A solution using the Parallel-J system which takes exactly the same approach as the J program 
+can be found in Section \ref{pjsPi}.
+
+\subsection{Extensions}
+\label{piext}
+The problem of calculating $\pi$ by finding the area under a specific curve 
+generalizes to calculating any useful value by finding the value of an integral. 
+In general, the domain over which an integral takes place need not be 1-dimensional, 
+as it was in this example (over the closed interval $[0,1]$).
+Instead, the desired value may most naturally be expressed as a volume or hyper-volume. 
+For this example problem, the extension to higher dimensions would be
+calculating $\pi$ by finding a volume or hyper-volume.
+
+The following discussion will focus on generalizing the creation of 
+the set of points in $n$-dimensional space over the interval $[0,1]^n$.
+The choice of function $f$ to apply to the points in $n$-space 
+is entirely based upon the value to be calculated, 
+and while it is possible to extend the generation of points in $n$-space 
+to arbitrary intervals, doing so would only complicate the example 
+without significant insight into the use of the rank operator.
+
+The most immediate extension of the C solution to any specific rank $n$ % TODO C pseudo-code example
+would be to wrap the program in the appropriate number of for loops. 
+In C, the function $f$ would probably take both 
+an array of coordinate values as well as a parameter \texttt{size} specifying the current dimension, 
+so the programmer would also have to make sure to change this parameter in each version for a new dimension.
+
+While this extension only involves changing two parts of the code, it is tedious 
+and must be done for every such extension. 
+On the other hand, finding a general solution could be somewhat involved 
+as it is perhaps not clear at first sight how to begin such an approach.
+The solution to this aspect of the problem along with some example uses is given in J in Fig~\ref{fig::xs_ext}:
+
+\glsadd{base}
+
+\begin{figure}[h]
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\framebox[\linewidth][l]{
+\BVerbatimInput{num-int-base.txt}
+}
+\end{small}
+\end{singlespacing}
+\end{quote}
+\caption{Creating coordinates in arbitrary dimensions}
+\label{fig::xs_ext}
+\end{figure}
+
+The function \texttt{xs} now takes a vector \texttt{vn} of length $n$ 
+specifying how to break up the interval $[0,1]^n$.
+To calculate the appropriate coordinates to do the Riemann sum, 
+the function first calculates the total number of points required (reducing \texttt{vn} with multiplication). 
+Then it finds, for each of the integers $i$ between 0 and one less than this total, 
+the array representation of $i$ in base \texttt{vn}. 
+Finally, like the above example, \textit{xs} divides each of these values by the original input 
+so that the resulting points are in the appropriate bounds.
+(For more on the behavior of the function \texttt{base}, see Appendix \ref{base}). % TODO footnote
+
+Because of the way \textit{xs} is defined, no matter the dimension on which the programmer desires to calculate their integral, 
+the points for applying the desired function can always be represented by at most a rank 2 array 
+
+\glsadd{shapeOf}
+\[\texttt{shapeOf xs vn} ; \Leftrightarrow ; \texttt{(* insert vn), n} \]
+
+To approximate the desired integral, apply the appropriate function (in an inherently parallel fashion) 
+to each of the vector elements (which represent the coordinates to calculate the Riemann sum), 
+then multiply the sum of the results by the appropriate value (\texttt{1 div (* insert vn)}).
+
+\section{Conway's ``Game of Life''}
+\subsection{Description}
+Conway's ``Game of Life''\cite{gol} is a cellular automaton which is ``played'' on an infinite or bounded 2-dimensional grid. 
+Every location on this grid represents a cell, which is either alive or dead. 
+At each iteration, every cell is updated by applying the following set of rules:
+
+\begin{enumerate}
+	\item If the chosen cell is dead, then
+	\begin{enumerate}
+		\item If this cell has exactly 3 neighbors that are alive, 
+			this cell becomes alive on the next iteration
+		\item Otherwise, the cell remains dead
+	\end{enumerate}
+	\item If the chosen cell is alive, then
+	\begin{enumerate}
+		\item If this cell has either 2 or 3 neighbors that are alive, 
+			this cell remains alive on the next iteration
+		\item Otherwise, this cell becomes dead on the next iteration
+	\end{enumerate}
+\end{enumerate}
+
+It is often convenient to represent each cell with a numeric value 
+that is 0 when the cell is dead, and 1 when the cell is alive. 
+Then, to calculate the number of alive neighbors for each give cell, 
+one need only sum the values of all of the neighbors.
+
+\subsection{Relevant Design Patterns}
+This problem represents the \textit{Geometric Decomposition} design pattern,\cite{mass}
+in which ``the algorithm [is] organized around a data structure that has been decomposed into concurrently updatable `chunks'.''
+For the bounded version of this problem, 
+the data structure is a regular rank 2 array with shape \textit{n, m}, 
+and the concurrently updatable chunk can be any subregion of the grid, 
+with the limiting case that each cell is a chunk. 
+While there are no data dependencies in this problem, 
+care must be taken when using an imperative approach, 
+as cells must be updated by reading their neighbors' current, and not future, values.
+
+\subsection{Solutions}
+\subsubsection{C with OpenMP}
+Fig~\ref{fig::game-of-life-omp.c} gives a fragment of a 
+parallel solution for the Game of Life in C with OpenMP.
+The fragment contains the function which updates each cell, 
+which is where most of the computational concurrency for the game of life is found. 
+Notice the two arguments to the function, \texttt{board} and \texttt{new\_board}.
+In the main program loop (not shown), these parameters are swapped every iteration, 
+avoiding the potential race condition mentioned above.
+
+\begin{figure}[hp]
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\framebox[\linewidth][l]{
+\BVerbatimInput{game-of-life-omp.c}
+}
+\end{small}
+\end{singlespacing}
+\end{quote}
+\caption{Game of Life in C with OpenMP}
+\label{fig::game-of-life-omp.c}
+\end{figure}
+
+In the code in Fig~\ref{fig::game-of-life-omp.c}, the tasks given to threads are the iterations of the outermost for loop, 
+i.e. the operations on each of the row elements, indexed by $i$.
+Again, we see that a safeguard for the index $j$ is required in order to avoid race conditions. 
+This safeguard, as well as the swapping back and forth of grids (which would be required in a sequential solution similar to this), 
+are changes in code which have to be made not because of the nature of the computation itself, 
+but because of the imperative, low-level nature of the tools to express it.
+
+\pagebreak
+
+\subsubsection{J}
+Like above, the J code below includes only the fragment responsible for updating the cells of the Game of Life. 
+One important difference between this solution and the OpenMP version is 
+the approach to calculating the number of neighbor cells that are alive.
+Instead of using array indexing at an item by item level, 
+the neighbors are represented as a rank 3 array of shifted versions of the original board. 
+In order to represent that cells near the edges do not have neighbors, 
+0s are shifted in the appropriate places.
+
+\begin{figure}[h]
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\framebox[\linewidth][l]{
+\BVerbatimInput{game_of_life.ijs}
+}
+\end{small}
+\end{singlespacing}
+\end{quote}
+\caption{Game of Life in J}
+\label{fig::game-of-life.ijs}
+\end{figure}
+
+\glsadd{reshape}
+
+Calculating the number of live neighbors of a cell by using a rank 3 array 
+is a data parallel approach to the problem, 
+since now the sum acts on every cell in the same position in every rank 2 item. 
+This approach is a safer alternative to requiring 
+that the location of the cell is known to evaluate its neighbors, 
+which potentially causes race conditions on thread-local variables.
+Similarly, instead of specifying a reduction on a work variable \texttt{sum},
+the parallel insert operator parallelize the operation in an automatically safe fashion.
+
+\begin{figure}[h]
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\framebox[\linewidth][l]{
+\BVerbatimInput{neighb-gol.txt}
+}
+\end{small}
+\end{singlespacing}
+\end{quote}
+\caption{Neighbors of cells in the Game of Life expressed as a 3D array}
+\label{fig::gol_nei}
+\end{figure}
+
+One objection to this approach would be the potentially dramatic increase 
+of memory use in the J approach compared to C with OpenMP. 
+This increase in memory use can be avoided by using \textit{index functions}, described in Section \ref{repa}.
+With an index function, only one copy of the original rank 2 would be kept, 
+and instead of direct indexing into a rank 3 array, 
+an index function is used to determine 
+what the direct index into the rank 2 array would be.
+
+A solution using the Parallel-J system which takes a similar approach as the J program 
+(but includes a non-J for loop for the iteration)
+can be found in Section \ref{pjsGol}.
+
+\subsection{Extensions}
+Of the listed problems, the Game of Life perhaps best demonstrates the utility 
+of generalizing the application of functions to higher rank arrays using function rank, 
+not only because the problem is expressed in a data parallel fashion; 
+in general, simulations of cellular automata need not be restricted to two dimensions, 
+but can occur on arbitrary dimensions.
+This discussion of extending the Game of Life to higher dimensions 
+will focus on calculating the number of neighbors in any dimension.
+While it is possibly desirable that the rules governing the life of a cell 
+would also change depending on the dimension, 
+the particular set of rules used is omitted from the discussion because 
+the decision of which rules govern the life of a cell is 
+dependent on the results the programmer wishes to achieve, 
+and not the general method for achieving them.
+
+In the C solution with OpenMP, 
+the obvious extension of the problem to any specific rank 
+is to nest the existing for loops with additional for loops. 
+Since for loops are used for both examining each cell, 
+as well as examining each neighbor of the given cell, 
+this involves writing 2 for loops with 2 extra variables for every additional dimension desired. 
+Additionally, if the convenience of the C structure \ttfamily twoD\_array \normalfont is desired, 
+the structure must be rewritten for every rank desired. 
+Again, on the other hand, it is may not be easy for a programmer to see 
+how to begin an approach which handles the problem in the general case.
+The solution to the general approach in J is given below.
+
+\begin{figure}[h]
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\framebox[\linewidth][l]{
+\BVerbatimInput{gol_ext.ijs}
+}
+\end{small}
+\end{singlespacing}
+\end{quote}
+\caption{Extending the Game of Life to higher dimensions}
+\label{fig::gol_ext.ijs}
+\end{figure}
+
+The most significant change from the previous approach 
+is changing \ttfamily shiftBy \normalfont to a function 
+that calculates the appropriate values based on the dimension of the board, 
+rather than hard coding them like before.
+This change accomplished with the \textit{base} function using much the same approach 
+as found with the previous problem in Section \ref{piext}, 
+so the details of its behavior will be glossed with a simple illustration, 
+found in Fig~\ref{fig::gol_ext}:
+
+\begin{figure}
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\framebox[\linewidth][l]{
+\BVerbatimInput{gol_ext.txt}
+}
+\end{small}
+\end{singlespacing}
+\end{quote}
+\caption{Neighbors in Game of Life extended to any dimension}
+\label{fig::gol_ext}
+\end{figure}
+
+There is one additional change necessary:
+since the values to shift always include the ``no shift'' vector
+(a vector with only 0s as entries),
+without additional logic live cells will always be counted as 
+having one additional neighbor. 
+The listed code handles this by subtracting from 
+the sum of the values the value of the cell itself.
+No other changes to the code are necessary for this extension to work, 
+and thus the inherent parallelism of the solution for fixed rank 
+is preserved without additional logic.
+
+\section{Merge Sort}
+\label{mgdes}
+\subsection{Description}
+Conceptually, sorting an array using merge sort is fairly easy to describe.
+
+\begin{itemize}
+	\item If the array has fewer than 2 elements, it's sorted
+	\item Otherwise, divide the array into two halves and sort each of these
+	\item Take the two sorted halves and merge them such that the resulting array remains sorted.
+\end{itemize}
+
+To simplify the discussion of the problem, 
+we will be concerned with sorting arrays 
+whose lengths are of the form $2^n$, where $n$ is a positive integer.
+This way the nature of the parallelism in the problem can be discussed 
+without going into the detail of handling special cases.
+
+Unfortunately, merge sort does not have a very intuitive extension into higher dimensions, 
+since comparing collections is not similar to comparing numbers.
+However, it will be shown that an advantage of function rank in approaching this problem
+will be easily extending a given vector to sort into an arbitrarily high dimension.
+
+\subsection{Relevant Design Patterns}
+This problem represents the ``Divide and Conquer'' design pattern,
+in which, like its sequential equivalent,
+``the problem is solved by splitting it into a number of smaller sub-problems, 
+solving them independently [concurrently], and merging the sub-solutions''\cite{mass}.
+Normally, problems that fit this design pattern are difficult to approach with data parallelism.
+Given the constraints mentioned above, however,
+merge sort will always the same number of sub-problems each with the same size, 
+allowing for a data parallel approach.
+
+\subsection{Solutions}
+\subsubsection{C with OpenMP}
+A parallel merge sort in C with OpenMP is given below.
+The solution, as well as the description of its workings, 
+was taken from an article on parallelism in OpenMP and MPI\cite{mergeomp}.
+The \texttt{sections} compiler directive
+specifies that the following blocks of code (each beginning with a \texttt{section} directive) 
+are to be executed independently of each other\cite{openmp}. 
+Then, after each sub-array is sorted, each thread (spawned by a different \textit{section} directives) 
+recursively merges (in-order) its sub-arrays in parallel, resulting in the original array being sorted.
+
+\begin{figure}[h]
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\framebox[\linewidth][l]{
+\BVerbatimInput{mergeSort-omp.c}
+}
+\end{small}
+\end{singlespacing}
+\end{quote}
+\caption{Parallel merge sort in C with OpenMP}
+\label{fig::mergeSort-omp.c}
+\end{figure}
+
+While this solution is expressed very imperatively, most likely for performance reasons, it need not have been. 
+Instead, each thread could have allocated memory and returned a new array with all the elements of the previous array in sort order.
+However, in either of these cases the programmer must explicitly work around the 
+imperative nature of the programming language, either by manually requesting new memory safe for the stateful operations, 
+or by manually keeping track of memory locations to avoid operating on data in use by other threads.
+However, this added effort would remain regardless of whether the solution were sequential or parallel, 
+since it comes from the C programming language, and is typical of many imperative programming languages.
+
+\subsubsection{J}
+\label{jmerge}
+In the following J code, the function \texttt{merge} and its helper functions were omitted.
+The full solution can be found in Appendix \ref{jmfull}
+
+\begin{figure}[ht]
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\framebox[\linewidth][l]{
+\BVerbatimInput{mergeSort.ijs}
+}
+\end{small}
+\end{singlespacing}
+\end{quote}
+\caption{Partial merge sort in J}
+\label{fig::mergeSort.ijs}
+\end{figure}
+
+This solution takes advantage of the constraints on the length of the array (it must be an integral power of two), 
+expressing the regularity of the sizes of sub-problems through a regular array 
+whose rank grows as the number of sub-problems does.
+For example, consider the code in Fig~\ref{fig::divide}: 
+
+\glsadd{deal}
+
+\begin{figure}[pht]
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\framebox[\linewidth][l]{
+\BVerbatimInput{divide.txt}
+}
+\end{small}
+\end{singlespacing}
+\end{quote}
+\caption{Divide and conquer by reshaping to an arbitrary rank array}
+\label{fig::divide}
+\end{figure}
+
+Unlike the high level description of the problem given at the beginning of this section (but equivalently), 
+this solution first sorts each two item vector, 
+expressing the recursive base-case of the merge sort algorithm as a data parallel operation.
+Then, vectors are repeatedly merged via an insert of the \texttt{merge} function on the rank 2 items 
+(which always consist of two vector elements).
+Again, while repeated function application doesn't quite fall into the bounds of data parallelism, 
+each merge operation on the rank 2 items is itself data parallel, 
+since the operation acts on the two-dimensional sub-collections concurrently. 
+The example in Fig~\ref{fig::conquer} illustrates this possibly unintuitive result of finding data parallelism 
+in a traditionally divide and conquer problem.
+
+\begin{figure}[hp]
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\framebox[\linewidth][l]{
+\BVerbatimInput{conquer.txt}
+}
+\end{small}
+\end{singlespacing}
+\caption{Merging each of the vector elements of every matrix}
+\label{fig::conquer}
+\end{quote}
+
+\end{figure}

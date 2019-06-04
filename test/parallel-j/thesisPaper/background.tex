@@ -1,0 +1,355 @@
+\chapter{Background}
+\label{back}
+
+\section{Function Rank}
+This section provides background information to help the reader understand 
+what function rank is and how it can help programmers exploit data parallelism.
+
+\subsection{History and Definition}
+\textit{Function rank} was first developed and described by Kenneth Iverson in a series of research reports written at IBM\cite{rapl}\cite{opandfunc}. 
+In one report, Iverson described it as 
+``the most important notion needed to provide a simple and systematic basis for the uniform treatment of all `mixed' or non-scalar functions''\cite{rapl}. % TODO footnote of next comment
+Since that time, the idea of function rank has matured and found its way into many dialects of APL, including J.
+
+J's model of function rank is slightly different from the model originally presented by Iverson\cite{rankanduni}\cite{jvocab}. 
+In J, the rank of a function \texttt{f} is a vector \texttt{v} of three values that represents the data rank of \texttt{f}'s expected arguments.
+Since in J functions take either one or two arguments, 
+the first value of \texttt{v} represents the rank of \texttt{f}'s argument in \textit{f's} single argument case 
+(in J referred to as the \textit{monadic} case);
+the second and third values in \texttt{v} represent the ranks of \texttt{f}'s arguments in \textit{f's} two-argument (\textit{dyadic}) case.
+If \texttt{f} has no rank expectations on one of its arguments, the corresponding entry for that argument in \texttt{v} is infinity (spelled in J \texttt{\_});
+if one of \texttt{f}'s arguments is a scalar, 
+the corresponding value is 0 
+(in J, scalars are collections of rank 0). %TODO make footnote
+
+For example, most arithmetic functions (such as addition) 
+operate on scalar values, and thus have the function rank \texttt{0 0 0}.
+These arithmetic functions, and all other functions that operate on scalar values, 
+must be extended to operate on collections of rank $n \ge 1$ 
+(fortunately, in J these extensions are done automatically).
+On the other hand, some functions (like a sort function) take a whole collection as their argument, 
+and thus might have the function rank \texttt{\_ \_ \_}.
+
+\subsection{Shape Agreement}
+In the cases where a J function \texttt{f} operates on arguments whose ranks match \texttt{f}'s rank, 
+\texttt{f} behaves much like a function in programming languages without formalized function rank (c.f. Fig~\ref{fig:j-ig-fr}).
+When \texttt{f}'s arguments do not match its function rank, 
+J can sometimes automatically extend \texttt{f} to match its arguments.
+For example, if \texttt{x} is a scalar and \texttt{c} is a collection of numbers, 
+J will automatically extend addition so that \texttt{x} is added to every element of \texttt{c} no matter the rank or shape of \texttt{c} 
+(c.f. Fig~\ref{fig:j-def-fr}).
+
+\glsadd{show}
+\glsadd{integers}
+\glsadd{from}
+\glsadd{NB.}
+
+\begin{figure}[htbp]
+\begin{quote}
+\HRule
+\begin{singlespacing}
+\begin{small}
+\begin{verbatim}
+   1 + 1
+2
+   NB. show. Identity function, used to display results
+   show =: ] 
+
+   NB. integers. creates an array with shape given by
+   NB. its argument, populated with incrememting values
+   NB. starting at 0
+   integers =: i. 
+
+   show mat2_3 =: integers 2 3
+0 1 2
+3 4 5
+
+   NB. from. Indexing into an array, 
+   NB. expressed as a function
+   from =: { 
+   1 from mat2_3
+3 4 5
+\end{verbatim}
+\end{small}
+\end{singlespacing}
+\HRule
+\end{quote}
+\caption{Example of J, ignoring function rank}
+\label{fig:j-ig-fr}
+\end{figure}
+
+\begin{figure}[htbp]
+\begin{quote}
+\HRule
+\begin{singlespacing}
+\begin{small}
+\begin{verbatim}
+   1 + mat2_3
+1 2 3
+4 5 6
+\end{verbatim}
+\end{small}
+\end{singlespacing}
+\HRule
+\caption{Example of J with automatic function rank extension}
+\label{fig:j-def-fr}
+\end{quote}
+\end{figure}
+
+In general, J can automatically extend addition (and all other functions on scalars) over two regular collections \texttt{x} and \texttt{y}
+if the shape of one collection \textit{prefixes} the other.
+Hui called this prefix the frame for the two collections 
+and called what remains of the shape vectors of \texttt{x} and \texttt{y} 
+after dropping the prefix their respective \texttt{cells}\cite{rankanduni}. 
+In this paper we will also say that when a suitable prefix can be found, 
+the shapes of \texttt{x} and \texttt{y} agree under the function (e.g., addition).
+
+The examples in Figs~\ref{fig:j-def-fr}, \ref{fig:agree1}, \ref{fig:agree2} illustrate that 
+a scalar, a vector of 2 elements, and another 2 by 3 matrix will all agree with \texttt{mat2\_3} under addition, 
+since the shapes of the scalar (the empty shape), the vector, and the other matrix would prefix the shape of \texttt{mat2\_3}; 
+any collection of rank $n \ge 2$ whose shape begins with $2$ $3$ will also agree with 
+\texttt{mat2\_3} under addition, since the shape of \texttt{mat2\_3} prefixes its shape.
+In the last example in Figure~\ref{fig:agree3}, 
+every scalar of \texttt{mat2\_3} is added to both of the scalars in each vector of \texttt{arr2\_3\_2}. 
+Another way to say this is that J made an implicit \textit{map} on the scalar elements of \texttt{mat2\_3}, 
+expanding each into a vector of 2 copies of the original scalar.
+J can do this because, with a \textit{frame} of \texttt{2 3}, \texttt{mat2\_3}'s \textit{cells} are scalars and 
+\texttt{arr2\_3\_2}'s \textit{cells} are vectors of two scalars.
+
+\glsadd{agreement}
+
+\begin{figure}[htbp]\ContinuedFloat*
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\framebox[\linewidth][l]{
+\BVerbatimInput{agree-long-1.txt}
+}
+\end{small}
+\end{singlespacing}
+\end{quote}
+\caption{Visualizing shape agreement. Continued in Fig~\ref{fig:agree2}}
+\label{fig:agree1}
+\end{figure}
+
+\begin{figure}[htbp]\ContinuedFloat
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\framebox[\linewidth][l]{
+\BVerbatimInput{agree-long-2.txt}
+}
+\end{small}
+\end{singlespacing}
+\end{quote}
+\caption{Visualizing shape agreement. Continued in Fig~\ref{fig:agree3}}
+\label{fig:agree2}
+\end{figure}
+
+\begin{figure}[hptbp]\ContinuedFloat
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\subcaptionbox{Addition of \texttt{mat2\_3} and \texttt{arr2\_3\_2}.\label{fig:agree3-1}}[\PartLineWidth]{
+	\framebox[\PartLineWidth][c]{
+	\BVerbatimInput{agree-long-3.txt}
+	}
+}% 
+\hfill%
+\subcaptionbox{Agreement of \texttt{mat2\_3} and \texttt{arr2\_3\_2}.\label{fig:agree3-2}}[\PartLineWidth]{
+	\framebox[\PartLineWidth][c]{
+	\BVerbatimInput{agree-long-4.txt}
+	}
+} 
+\end{small}
+\end{singlespacing}
+\end{quote}
+\caption{Visualizing shape agreement, part 3.}
+\label{fig:agree3}
+\end{figure}
+
+\pagebreak
+
+\subsection{Rank Operator}
+So far, we are still unable to add a vector \texttt{vec3} of 3 scalars to \texttt{mat2\_3}, 
+since the shapes \texttt{3} and \texttt{2 3} have no suitable prefix.
+
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\begin{verbatim}
+   show vec3 =: i. 3
+0 1 2
+  vec3 + mat2_3
+|length error
+|   vec3    +mat2_3
+\end{verbatim}
+\end{small}
+\end{singlespacing}
+\end{quote}
+
+\noindent However, it should be possible to add \texttt{vec3} to each of the vectors of \texttt{mat2\_3} 
+since each of these vectors have the same length.
+To allow the programmer to extend functions in ways other than the default from prefix agreement, 
+J also includes a \texttt{rank operator} (spelled with double quotes: \texttt{"}).
+The rank operator is a higher order function that takes as its first argument a function (not higher-ordered) % TODO footnote for taking function?
+and as its second argument a vector of 1, 2, or 3 numeric values, 
+and returns a function that performs the same operation as the argument function but on the specified data rank\cite{rankanduni}.
+
+For example, the following command, 
+
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\begin{verbatim}
+   vec3 +"1 mat2_3
+0 2 4
+3 5 7
+\end{verbatim}
+\end{small}
+\end{singlespacing}
+\end{quote}
+
+\noindent is read ``add the rank 1 items of \texttt{vec3} to the rank 1 items of \texttt{mat2\_3}.''
+In terms of \textit{frames}, \textit{cells}, and implicit \textit{maps}, 
+the frames of the rank 1 items in \texttt{mat2\_3} and \texttt{vec3} are \texttt{2} and the empty frame, respectively, 
+and they share a common cell size \texttt{3}.
+Because the frame at rank 1 of \texttt{vec3} prefixes the rank 1 frame of \texttt{mat2\_3} (the empty frame prefixes every frame), 
+the shapes now agree, and there is an implicit map on the single vector element of \texttt{vec3} expanding to a matrix of two vectors.
+
+\subsection{The Application of a Function with Rank on its Arguments}
+\label{fridp}
+The following is a high level description of how a function \texttt{f} with rank \texttt{r} 
+is applied to its arguments \texttt{x} and \texttt{y}\cite{rankanduni}.
+
+\begin{enumerate}
+	\item Calculate the cell shape at rank \texttt{r} of \texttt{x} and \texttt{y} 
+		by taking the \texttt{r} smallest dimensions of the shape vector of each.
+		E.g., the cell shape of \texttt{mat2\_3} at rank 1 is 3, since each vector contains 3 items.
+	\item Calculate the frame shape at rank \texttt{r} of \texttt{x} and \texttt{y} 
+		by removing from the shape vector of each their respective cell shapes.
+		E.g, at rank 1, the frame shape of \texttt{mat2\_3} is $2$,
+		the frame shape of \texttt{arr2\_3\_2} is $2$ $3$, 
+		and the frame shape of \texttt{vec3} is an empty frame.
+	\item If the frame shape of \texttt{x} and \texttt{y} do not agree, then return with an error.
+		Otherwise, extend the argument with the smaller frame shape via an implicit map on its cells at rank \texttt{r}.
+		If the frame shape of \texttt{x} and \texttt{y} are the same, do nothing.
+	\item \label{dataparstep}Apply \texttt{f} to every cell at rank \texttt{r} of \texttt{x} and \texttt{y}.
+		If \texttt{f} is a user defined function \texttt{u} with function rank \texttt{ru} given with the rank operator,
+		(i.e., \texttt{f =: u ("ru)})
+		repeat this process with each of the cells of \texttt{x} and \texttt{y}, \texttt{u}, and \texttt{ru}
+	\item Reassemble the result cells of the previous step using the agreed frame shape.
+\end{enumerate}
+
+\subsection{Inherent Data Parallelism}
+
+While many of these steps have some exploitable concurrency, 
+step \ref{dataparstep} has the most potential for performance increases through parallelism.
+It is inherently data parallel because 
+\texttt{f} operates on each pair of cells in \texttt{x} and \texttt{y} independently.
+For large computations, it is also the most computationally intensive step
+since it recurses on cells that can themselves be large regular collections.
+
+Finally, because all functions in J have these steps in common, 
+they can also all be parallelized in the library, rather than by the user.
+Therefore, programs that use a parallelized library with function rank 
+can exploit any inherent data parallelism in their problem automatically, 
+provided the problem can be expressed in terms of function rank.
+
+\section{Other Approaches}
+\subsection{Regular Parallel Arrays in Haskel}
+\label{repa}
+In 2010, Keller et al. published a paper 
+describing a Haskell library they had created called \textit{Repa}\cite{dph}
+that implements and parallelizes regular arrays.
+There is much to commend about their work, including ``that it (1) is purely
+functional, (2) supports reuse through shape polymorphism, (3)
+avoids unnecessary intermediate structures rather than relying on
+subsequent loop fusion, and (4) supports transparent parallelization,''
+and that it is a library for a functional language with relatively wide use. 
+Two features of \textit{Repa} impact current and future work on Parallel-J: 
+\textit{index functions} and the static capture of a collection's shape information.
+
+\textit{Repa} achieves good performance on a family of operations known as \textit{index transformations} 
+(such as transposing or shifting an array) 
+by formalizing the notion of an \textit{index function}.
+An \textit{index transformation} is an operation on a regular collection that 
+conceptually changes how items in a collection are accessed (indexed). 
+For example, using a C-style notation, 
+the index transformation of transposing a matrix would be
+\texttt{transpose2D(matrix)[i][j] $\Leftrightarrow$ matrix[j][i]}, for all integers $i,j$. 
+With index functions, programmers can implement index transformations as 
+a change to the way a collection is indexed, 
+rather than as a copy of elements to another location in memory.
+Parallel-J currently lacks index functions, 
+but a future Scala regular collections library could easily support them.
+
+Impressively, \textit{Repa} also statically captures some of the effects functions have on the shapes of their arguments.
+For example, in their paper the type signature of \textit{sum} shows that, given a numeric array of rank $n$, 
+\textit{sum} returns an array of rank $n-1$ with the same shape as the argument array 
+except without the rightmost (smallest) dimension\cite{dph}.
+Another way to state this is \textit{sum} takes an arbitrary regular array of rank $n \ge 1$ 
+and sums that array's vectors, 
+returning an array whose shape is the shape of the argument array but with the smallest dimension dropped off.
+Consequently, passing \textit{sum} a rank 0 array would be a compile-time error.
+In general, this library ``enables [the user] to track the rank of each array in its type,
+guaranteeing the absence of rank-related runtime errors''\cite{dph}.
+
+\textit{Repa}'s static capture of the rank of a function's arguments is equivalent to J's notion of function rank.
+\textit{Repa} implements an array's rank as a list inhabited by the type \texttt{Int} % TODO footnote
+and analyzes its structure through Haskell's pattern-matching facilities and some language extensions.
+\textit{Repa} also has a significant advantage over J in that, lacking a static type system, 
+the effects functions in J have on the rank of their arguments cannot be known statically.
+However, unlike J, Repa appears to lack a rank operator.
+Instead, functions must be extended manually to arrays of higher rank. 
+While the manual extensions in \textit{Repa} 
+(such as in functions like \textit{replicate} and \textit{backpermute}) 
+are safer from error than nested \textit{maps} or \textit{for loops}
+due to \textit{Repa}'s type safety and to reducing some of the boilerplate code,  
+because it does not express these extensions as higher-ordered functions, 
+programmers using \textit{Repa} must still work at a conceptually lower-level of abstraction 
+and write more boilerplate code than if they used J's rank operator.
+
+For example, while in J \textit{sum} (spelled \texttt{+/}) 
+automatically sums the rank $n-1$ items of a rank $n$ array, 
+in \textit{Repa} \textit{sum} by default operates only on the scalars (rank 0 items) of the vectors of a collection. 
+To extend the existing \textit{sum} function in \textit{Repa} to any array of rank $n > 1$, 
+programmers must write a new function that manually extends \textit{sum} to each dimension they desire\cite{dph}.
+In contrast, getting the same behavior as \textit{Repa}'s \textit{sum} function in J requires no manual extension;
+it is written \texttt{+/ " 1}, which (when translated in English) 
+reads rather intuitively as ``apply sum to the vector elements of its argument.''
+
+Finally, although both J and Repa support some notion of function rank, 
+conceptually it is easier to understand, for example, 
+that \texttt{f (" 3)} means ``apply f on the rank 3 items'', than it is to understand \textit{Repa}'s equivalent, 
+\texttt{(sh.:Int.:Int.:Int)} as it would appear in the function declaration below: 
+
+\[\texttt{f :: (Shape sh, Elt e) => Array (sh :. Int :. Int :. Int) e -> Array sh e} \]
+
+\noindent Haskell's static type system causes \textit{Repa}'s greater verbosity; 
+it also allows \textit{Repa} to capture the effects operations have on data rank at compile time. 
+However, capturing the rank of \texttt{f}'s argument both statically and numerically (and thus, in a more convenient fashion)
+requires a type system more sophisticated than Haskell's or even many of its language extensions. % TODO cite
+J, in contrast, is dynamically typed, and while this means J does not catch errors before runtime, 
+its functions also do not need to statically document their effects on data, simplifying the way programmers write and use code.
+
+\subsection{SA-C, Boost MultiArray}
+While \textit{Repa} seems to be the best of the alternative solutions available, 
+due to being already parallelized, capturing the effects functions have on the rank of their data, 
+and reducing boilerplate code, 
+it is appropriate to mention other influential work in the subject of data parallelism on regular collections.
+Our analysis is mostly in agreement with the developers of \textit{Repa}\cite{dph}.
+
+Single-Assignment C (\textit{SA-C}) is a functional, C-like language 
+that has many of the same advantages as \textit{Repa}\cite{dph}\cite{sac}.
+Unfortunately, this also means that it has the same limitations, most notably the lack of a rank operator.
+Additionally, unlike \textit{Repa} and our own research (but like J), 
+it is a special purpose array programming language and 
+not an extension to an existing, general purpose programming with a broad user base and 
+with access to large and well developed libraries.
+
+The C++ library Boost.MultiArray, in contrast, is a library for a general purpose and widely used programming language\cite{boost}.
+However, its ability to analyze and operate on the structure of regular collections is limited compared to SA-C or \textit{Repa}.
+Furthermore, it does not benefit from a naturally parallel implementation, 
+its arrays are operated on in a conceptually lower (imperative) level, 
+and it also does not have an equivalent to the rank operator. 

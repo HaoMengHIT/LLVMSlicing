@@ -1,0 +1,245 @@
+\chapter{Proposed Operators for a Parallel Implementation of J} 
+\label{paraop}
+
+\section{Rationale}
+Ideally, a parallel library would automatically exploit potential concurrency, 
+and thus reduce a program's runtime, 
+without requiring the programmer to write a single line of parallelizing code. 
+However, this is often not the case,  
+because frequently programmers must use domain knowledge 
+of the problem or platform to achieve good run-time results. 
+
+To grant this flexibility in future parallel implementations of J, 
+this section introduces two new operators, called the \textit{parallel rank operator} 
+and the \textit{parallel insert operator}.
+The \textit{parallel rank operator}, described in Section \ref{prank}, 
+would allow the programmer to specify the data ranks on which to parallelize code.
+The \textit{parallel insert operator}, described in Section \ref{pins}, 
+would allow the programmer to parallelize reducing operations with associative functions.
+Also included is a new system library 
+that would allow the programmer to change the underlying parallel environment,
+described in Section \ref{pfor}
+
+The spellings \texttt{"::} and \texttt{/::} for the two parallel operators 
+require no changes to the existing J lexer\cite{ioj}.
+Fig~\ref{fig:jlexer-pres} demonstrates this, showing that the strings 
+\texttt{"::} and \texttt{\::} are whole lexemes and so are placed entirely in their own boxes, 
+instead of being split between several boxes.
+Also, the spellings use the same base character as their sequential analogs, (\texttt{"} and \texttt{/}), 
+as well as two ``parallel'' colons, making it easier for the programmer to remember their functions.
+
+\begin{figure}[htbp]
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\framebox[\linewidth][l]{
+\BVerbatimInput{jlexer-preserved.txt}
+}
+\end{small}
+\end{singlespacing}
+\end{quote}
+\caption{The current J lexer recognizes \texttt{"::} and \texttt{/::} as lexemes}
+\label{fig:jlexer-pres}
+\end{figure}
+
+For the parallel environment library, 
+it seems best to augment the existing ``\gls{foreign}'' operator (spelled \texttt{!:}).  
+The foreign operator allows
+the programmer to change environmental parameters 
+such as print precision, file I/O, etc\cite{jvocab}, 
+and so fits the idea of changing the state of a parallel environment. 
+\texttt{111} is a suitable numeric encoding for the parallel library because 
+it lies within the range of used values, is not already in use, and 
+mnemonically it looks like three parallel lines (\texttt{11} was already taken)\cite{jvocab}.
+
+\section{Parallel Rank Operator: \texttt{"::}}
+\label{prank}
+
+\subsection{Usage}
+The proposed parallel rank operator \texttt{"::} 
+is a two-argument higher order function (conjunction)
+whose first argument is a function 
+and whose second argument is the ranks to both apply and parallelize the function. 
+Its output would be functionally equivalent to the (sequential) rank operator, i.e. 
+\[\texttt{f (":: r) y} \Leftrightarrow \texttt{f (" r) y}\] and
+\[\texttt{x f (":: r) y} \Leftrightarrow \texttt{x f (" r) y}\]
+
+\noindent for all $f, r, s$, and $y$.
+\texttt{"::} would override defaults for automatic parallelization 
+to guarantee the resulting function creates parallelizable tasks 
+on the specified cells of its argument(s).
+These tasks would then be distributed to the available threads.
+
+To illustrate, consider the examples in Fig~\ref{fig::pr_tasks}. 
+Fundamentally \texttt{increment} always operates on numeric scalars, 
+so it always yields the same result regardless of cells to which it is applied. 
+This property would also hold when using the parallel rank operator. 
+However, while the results of \texttt{increment} would be independent of rank, 
+the tasks created by \texttt{"::} would not be.
+As Fig~\ref{fig::pr_tasks} shows, 
+the line \texttt{increment (":: 1)} would create tasks 
+for incrementing each of the vector elements of \texttt{mat2\_3} in parallel.
+In general, the programmer could create parallelizable tasks from incrementing
+the six scalars, the two vectors, or the one matrix of \texttt{mat2\_3}.
+
+\pagebreak
+
+\glsadd{increment}
+\glsadd{showTasks}
+
+\begin{figure}[hptb]
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\framebox[\linewidth][l]{
+\BVerbatimInput{showTasks-sing.txt}
+}
+\end{small}
+\end{singlespacing}
+\end{quote}
+\caption{Visualizing tasks created by the parallel rank operator}
+\label{fig::pr_tasks}
+\end{figure}
+
+Fig~\ref{fig::pr_tasks2} gives a more complex example of how \texttt{"::} would create parallel tasks  
+involving functions of two arguments as well as repeated applications of the rank operator,
+Using the parallel rank operator, the line of code
+\texttt{mat2\_3 +("::2) arr2\_2\_3} would create parallelizable tasks for adding \texttt{mat2\_3} to 
+each of the matrix (rank 2) items of \texttt{arr2\_2\_3}, 
+whereas \texttt{mat2\_3 +("::1)("2) arr2\_2\_3} would parallelize addition 
+of each of the vectors in both arrays.
+
+\begin{figure}[p]
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\framebox[\linewidth][l]{
+\BVerbatimInput{showTasks-doub.txt}
+}
+\end{small}
+\end{singlespacing}
+\end{quote}
+\caption{Visualizing tasks created by the parallel rank operator for two collections}
+\label{fig::pr_tasks2}
+\end{figure}
+
+Some open questions remain, notably 
+how the parallel rank operator should behave when used multiple times in the same function.
+Should multiple applications of \texttt{"::} create multiple levels of parallelizable tasks, 
+increasing the overhead of creating and scheduling threads? 
+Or should only the outermost occurrence determine the parallel tasks, 
+unparallelizing programs when they are used in larger functions?
+Either possibility could significantly impact the program's performance.
+One solution might be to let programmers chose which behavior best suites their needs 
+using the parallel environment library described in Section \ref{pfor}.
+
+\pagebreak
+
+\section{Parallel Insert Operator: \texttt{/::}}
+\label{pins}
+\subsection{Rationale}
+Programmers often need need to perform some reducing operation on large collections, 
+for example finding the sum, product, maximum, minimum, etc. of a collection of numbers.
+When the reducing operation $f$ is associative, 
+i.e. when $f(x,y) = f(y,x)$ for all $f, x, y$ 
+(and when dealing with floating point values, for a sufficiently tolerant comparison \texttt{=}),
+then the reduction can be executed in parallel with little effort on the programmer's part.
+Therefore, a future parallel implementation of J should allow the programmer 
+to explicitly reduce an array with an associative function in parallel, 
+since J's (sequential) insert operator does not assume its argument function is associative, 
+nor is it immediately obvious how to determine if a user-defined function is associative.
+
+\subsection{Usage}
+The proposed parallel insert operator \texttt{/::} is a single-argument higher order function (adverb) 
+whose argument \texttt{u} is an associative two-argument function 
+and which returns a function that reduces a collection with \texttt{u}.
+The (sequential) insert operator and \texttt{\::} would be 
+functionally equivalent for all associative functions.
+Thus, the J session depicted in Fig~\ref{fig::pinsert} would have the same results for every line of code executed, 
+regardless of whether \texttt{insert} was assigned to be \texttt{/::} or \texttt{/}
+
+\glsadd{insert}
+
+\begin{figure}[h]
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\framebox[\linewidth][l]{
+\BVerbatimInput{par-insert.txt}
+}
+\end{small}
+\end{singlespacing}
+\end{quote}
+\caption{Using the parallel insert operator}
+\label{fig::pinsert}
+\end{figure}
+
+Some open questions remain, notably 
+how the parallel insert operator should behave on non-associative functions. 
+Without associativity, the result of reduction depends on the order the function is applied to an array's items, 
+thus destroying any possibility for parallelism.
+One way to deal with non-associativity is to restrict the domain of \texttt{/::} to associative primitives. 
+This prevents logical errors such as radically different results for the same calculations on the same data, 
+depending on the thread scheduling scheme. 
+However, this approach would likely require adding an additional table of information 
+storing whether the given primitive is associative.
+This approach would also exclude user-defined associative functions 
+from benefiting from parallelism.
+
+Alternatively, \texttt{/::} might ignore the question of associativity 
+and try to parallelize all of its functions as if they were associative.
+This approach could lead to errors difficult for a novice parallel programmer to debug, 
+since they would occur at the logic level. 
+Finally, the decision might be left to programmers by allowing them to switch between either of these options 
+using the parallel environment library, discussed in Section \ref{pfor}.
+
+\section{Parallel Environment Library: \texttt{111 !:}} 
+\label{pfor}
+
+\subsection{Conventions of the Foreign Operator}
+The foreign operator is a two-argument higher order function, or in J a \textit{conjunction}, 
+whose arguments are always numeric.
+Conceptually, these arguments serve as an index into system libraries and functions.
+The left argument indexes the desired library.
+E.g., $2$ indexes the library for functions which affect the host machine, 
+$9$ indexes the library for viewing and setting global J parameters (such as print precision), and etc.
+The second argument indexes a specific function.
+For example, \texttt{9!:6}  is the function which displays the print characters for J's box type.
+
+\subsection{Usage}
+There are many options to consider for implementing a full suite of functions for a parallel environment library.
+A more full review of the functionality of other shared-memory parallel libraries, such as OpenMP\cite{openmp}, 
+is required to make sure such a library provides all the functionality parallel programmers expect.
+However, two types of functionality would almost certainly be required.
+They are:
+
+\begin{enumerate}
+    \item Getting and setting the total number of threads available in the parallel environment,
+        with an extension for J's value for infinity to mean no user-specified limit on the number of threads, and
+    \item Getting and setting the thread scheduling schemes (such as static, round-robin, etc.).
+        These would be encoded as numeric values, in keeping with the conventions of the foreign libraries.
+\end{enumerate}
+
+\noindent Additionally, as discussed in Sections \ref{pfor} and \ref{pins}, it may be desirable to change 
+the default behavior of the parallel rank operator and/or parallel insert operator, 
+to parallelize on user-defined associative operators.
+
+\begin{figure}[h]
+\begin{quote}
+\begin{singlespacing}
+\begin{small}
+\framebox[\linewidth][l]{
+\BVerbatimInput{par-foreign.txt}
+}
+\end{small}
+\end{singlespacing}
+\end{quote}
+\caption{A hypothetical J session using the parallel environment library}
+\label{fig::pfor}
+\end{figure}
+
+The example given in Fig~\ref{fig::pfor} is not based on any existing J REPL, 
+but an illustration of how programmers might use this proposed library.
+The last line would parallelize addition on the row elements of \texttt{mat2\_3} and \texttt{arr2\_2\_3},
+then parallelize the sum operation on each of the vectors of the resulting array, 
+using 4 threads with a round-robin scheduling scheme.

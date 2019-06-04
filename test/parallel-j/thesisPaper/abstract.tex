@@ -1,0 +1,39 @@
+\begin{center}
+
+\bigskip
+
+\begin{Large}
+\textbf{\theTitle}
+\end{Large}
+
+\bigskip
+
+\begin{large}
+\theAuthor
+\end{large}
+
+\bigskip
+\bigskip
+
+\textbf{Abstract}
+
+\end{center}
+
+\noindent
+Function rank has important applications in parallel computing.
+In particular, certain formalizations of function rank can help exploit potential concurrency, 
+because these formalizations allow the programmer to express 
+safely, easily, and in an automatically data parallel fashion  
+both the application of a function to subcollections of a regularly shaped multidimensional collection and 
+the extension of an existing function to similar problems in higher dimensions.
+
+This paper illustrates the importance of function rank 
+by discussing solutions to three parallel problems that both do and do not use formalized function rank. 
+Each problem represents a different parallel design pattern, 
+so that the discussion extends to entire classes of parallel probelms. 
+Additionally, this paper includes both a set of proposals for a parallel implementation of J, 
+which is an array-oriented, functional programming language with function rank, 
+and a prototype implementation of a parallel regular collections library using function rank in Scala. 
+Also given are the performance results for solutions to each of the problems 
+both in Scala using the prototype library and in C with OpenMP, for comparison.
+This work is, however, intended only as a proof of concept.

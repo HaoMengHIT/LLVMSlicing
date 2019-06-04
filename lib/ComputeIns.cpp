@@ -44,15 +44,19 @@ namespace{
 
 			vector<double> timeInf;
 
+			map<string,double> mathTime;
+			vector<vector<int>> mathInsNumInBB;
+			vector<vector<long long>> mathInsTotal;
 
-         ///////add by haomeng
-         vector<int> isParaRegion;
-         map<Function*, int> parallelRegion;
-         void isBBParallel(Module& M, BasicBlock * BB);
-         int isIteParallel(Module& M, Function* FF, int regionId, Function* F);
-         void judgeIsParallel(Module &M);
-         Function* getFunction(Value *Call);
-         /////////
+
+			///////add by haomeng
+			vector<int> isParaRegion;
+			map<Function*, int> parallelRegion;
+			void isBBParallel(Module& M, BasicBlock * BB);
+			int isIteParallel(Module& M, Function* FF, int regionId, Function* F);
+			void judgeIsParallel(Module &M);
+			Function* getFunction(Value *Call);
+			/////////
 
 			bool runOnModule(Module &M) override;
 			void getTime(string s);//get instruction time
@@ -64,6 +68,11 @@ namespace{
 			void getBinaryOPNum(Module &M);
 			void getBinaryOPNumAll();
 			void matchingBBwithParallel(Module& M);//match the basic block with the parallel
+
+			void getMathInsTime(string s);//get the math instruction's time
+			void getMathInsNumInBB(Module &M);
+			void getMathInsNumTotal();
+			void test();
 	};
 
 }
@@ -73,122 +82,325 @@ char ComputeIns::ID = 0 ;
 //regite pass
 static RegisterPass<ComputeIns> X("compute-BBnum","compute basic block's number and instrument",false,false);
 
+void ComputeIns::test(){
+	map<string,double>::iterator it;
+	it = this->mathTime.begin();
+
+	while(it != this->mathTime.end()){
+		errs() << it->first << ":\t" <<it->second << "\n";
+		it++;
+	}
+
+	vector<vector<long long>>::iterator iter;
+	vector<long long> iter_tmp;
+	vector<long long>::iterator itp;
+
+	int i=0;
+	for(iter = this->mathInsTotal.begin() ; iter != this->mathInsTotal.end(); iter++){
+		iter_tmp = *iter;
+		errs() << i << ":\t";
+		for(itp = iter_tmp.begin(); itp != iter_tmp.end() ; itp++){
+			errs() << *itp <<"\t";
+		}
+		i++;
+		errs() <<"\n";
+	}
+}
+
+void ComputeIns::getMathInsTime(string s){
 
 
+	errs() <<"-------------getMathInsTime()-----------------\n";
+
+	ifstream infile;
+	infile.open(s);
+
+	double time;
+	vector<double> time_tmp;
+	while(!infile.eof()){
+		infile >>time;
+		time_tmp.push_back(time);
+
+	}
+	time_tmp.pop_back();
+
+	infile.close();
+
+	int flag = 0;
+	for(auto I : time_tmp){
+		switch(flag){
+			case 0:
+				this->mathTime.insert(pair<string,double>("sqrt",I));
+				break;
+			case 1:
+				this->mathTime.insert(pair<string,double>("fabs",I));
+				break;
+			case 2:
+				this->mathTime.insert(pair<string,double>("log",I));
+				break;
+			case 3:
+				this->mathTime.insert(pair<string,double>("trunc",I));
+				break;
+			case 4:
+				this->mathTime.insert(pair<string,double>("exp",I));
+				break;
+			case 5:
+				this->mathTime.insert(pair<string,double>("cos",I));
+				break;
+			case 6:
+				this->mathTime.insert(pair<string,double>("sin",I));
+				break;
+			case 7:
+				this->mathTime.insert(pair<string,double>("logf",I));
+				break;
+			case 8:
+				this->mathTime.insert(pair<string,double>("pow",I));
+				break;
+			case 9:
+				this->mathTime.insert(pair<string,double>("cabs",I));
+				break;
+			default:
+				break;
+		}
+		flag++;
+
+	}
+
+	errs() <<"共有数学函数库：\t" << this->mathTime.size() <<"个\n"; 
+}
+
+void ComputeIns::getMathInsNumInBB(Module &M){
+
+	errs() <<"--------------getMathInsNumBB()------------------\n";
+
+	vector<int> bb;
+
+	int sqrt=0,fabs=0,log=0,trunc=0,exp=0,cos=0,sin=0,logf=0,pow=0,cabs=0;
+	for(auto FB = M.begin(),FE = M.end(); FB!=FE ; ++FB){
+		if (FB->isDeclaration()) continue;
+		StringRef fname = FB->getName();
+		if (fname.find("WriteOpenMPProfile")!=fname.npos) continue;
+		for(auto BB = FB->begin(), BE = FB->end(); BB!=BE ; ++BB){
+			for(auto IB = BB->begin(), IE = BB->end(); IB!=IE ; ++IB){
+				Instruction* ins = &*IB;
+				if(CallInst* CI = dyn_cast<CallInst>(ins)){
+					Function* F = CI->getCalledFunction();
+					if(F->getName().startswith("sqrt")){
+						sqrt++;
+					}else if(F->getName().startswith("fabs")){
+						fabs++;
+					}else if(F->getName().startswith("log")){
+						log++;
+					}else if(F->getName().startswith("trunc")){
+						trunc++;
+					}else if(F->getName().startswith("exp")){
+						exp++;
+					}else if(F->getName().startswith("cos")){
+						cos++;
+					}else if(F->getName().startswith("sin")){
+						sin++;
+					}else if(F->getName().startswith("logf")){
+						logf++;
+					}else if(F->getName().startswith("pow")){
+						pow++;
+					}else if(F->getName().startswith("cabs")){
+						cabs++;
+					}
+				}
+
+				if(CallInst* CI = dyn_cast<CallInst>(ins)){
+					Function* callee = CI->getCalledFunction();
+					if(callee->getName().startswith("__kmpc_fork_call")){
+						bb.push_back(sqrt);
+						bb.push_back(fabs);
+						bb.push_back(log);
+						bb.push_back(trunc);
+						bb.push_back(exp);
+						bb.push_back(cos);
+						bb.push_back(sin);
+						bb.push_back(logf);
+						bb.push_back(pow);
+						bb.push_back(cabs);
+						sqrt=0,fabs=0,log=0,trunc=0,exp=0,cos=0,sin=0,logf=0,pow=0,cabs=0;
+						this->mathInsNumInBB.push_back(bb);
+						bb.clear();
+					}
+				}
+			}
+			bb.push_back(sqrt);
+			bb.push_back(fabs);
+			bb.push_back(log);
+			bb.push_back(trunc);
+			bb.push_back(exp);
+			bb.push_back(cos);
+			bb.push_back(sin);
+			bb.push_back(logf);
+			bb.push_back(pow);
+			bb.push_back(cabs);
+			sqrt=0,fabs=0,log=0,trunc=0,exp=0,cos=0,sin=0,logf=0,pow=0,cabs=0;
+			this->mathInsNumInBB.push_back(bb);
+			bb.clear();
+
+		}
+
+	}
+
+	errs() << "=================" << this->mathInsNumInBB.size() << "\n";
+
+}
+
+
+void ComputeIns::getMathInsNumTotal(){
+
+	errs() <<"--------------------getMathInsNumTotal()--------------------\n";
+	
+	
+	//每个基本块中的运算符
+	vector<vector<int>>::iterator BBLable;
+	vector<int> BBLable_temp;
+	vector<int>::iterator OPNum;
+
+	//线程层
+	vector<vector<long long>>::iterator ThreadLable;
+	vector<long long> ThreadLable_temp;
+	vector<long long>::iterator bbFreq;
+
+	vector<long long> allOPInBB;
+
+	for(ThreadLable = this->BBFreq.begin(); ThreadLable != this->BBFreq.end(); ThreadLable++){
+		ThreadLable_temp = *ThreadLable;
+//		errs() << "=======:"<<this->mathInsNumInBB.size() <<"\n";
+		for(bbFreq = ThreadLable_temp.begin(), BBLable = this->mathInsNumInBB.begin(); bbFreq != ThreadLable_temp.end(), BBLable != this->mathInsNumInBB.end(); bbFreq++, BBLable ++){
+//			errs() << "========\n";
+			BBLable_temp = *BBLable;
+			for(OPNum = BBLable_temp.begin(); OPNum!= BBLable_temp.end(); OPNum++){		
+				
+				long long num = *OPNum * (*bbFreq);
+				allOPInBB.push_back(num);
+			}
+			this->mathInsTotal.push_back(allOPInBB);
+//			errs()<< "---------------\n";
+			allOPInBB.clear();
+		}
+	}
+
+	errs() <<"=================" << this->mathInsTotal.size() <<"\n";
+
+}
 static Value* castoff(Value* v)
 {
-    if(ConstantExpr* CE = dyn_cast<ConstantExpr>(v))
-    {
-        v = CE->getAsInstruction();
-    }
+	if(ConstantExpr* CE = dyn_cast<ConstantExpr>(v))
+	{
+		v = CE->getAsInstruction();
+	}
 
-    if(CastInst* CI = dyn_cast<CastInst>(v)){
-        return castoff(CI->getOperand(0));
-    }else
-        return v;
+	if(CastInst* CI = dyn_cast<CastInst>(v)){
+		return castoff(CI->getOperand(0));
+	}else
+	  return v;
 }
 
 Function* ComputeIns::getFunction(Value *Call)
 {
-    if(Call==NULL) return NULL;
-    CallInst* CI = dyn_cast<CallInst>(Call);
-    if(CI==NULL) return NULL;
-    return dyn_cast<Function>(castoff(CI->getCalledValue()));
+	if(Call==NULL) return NULL;
+	CallInst* CI = dyn_cast<CallInst>(Call);
+	if(CI==NULL) return NULL;
+	return dyn_cast<Function>(castoff(CI->getCalledValue()));
 }
 
 
 int ComputeIns::isIteParallel(Module& M, Function* FF, int regionId, Function* F)
 {
-    CallGraph CG(M);
-    CallGraphNode* fNode = CG[FF];
-    queue<CallGraphNode*> Q;
-    map<CallGraphNode*, bool> isVisit;
-    Q.push(fNode);
-    isVisit[fNode] = true;
-    while(!Q.empty())
-    {
-        fNode = Q.front();
-        Q.pop();
-        for(auto I = fNode->begin(), E = fNode->end(); I!=E; ++I){
-            Function* Fn = getFunction(I->first);
-            if(F==NULL || (Fn->isDeclaration()))
-                continue; // this is a external function
-            if(F == Fn)
-            {
-                return regionId;
-            }
-            fNode = CG[Fn];
-            if(isVisit.find(fNode) == isVisit.end() || !isVisit[fNode])
-            {
-                Q.push(fNode);
-                isVisit[fNode] = true;
-            }
+	CallGraph CG(M);
+	CallGraphNode* fNode = CG[FF];
+	queue<CallGraphNode*> Q;
+	map<CallGraphNode*, bool> isVisit;
+	Q.push(fNode);
+	isVisit[fNode] = true;
+	while(!Q.empty())
+	{
+		fNode = Q.front();
+		Q.pop();
+		for(auto I = fNode->begin(), E = fNode->end(); I!=E; ++I){
+			Function* Fn = getFunction(I->first);
+			if(F==NULL || (Fn->isDeclaration()))
+			  continue; // this is a external function
+			if(F == Fn)
+			{
+				return regionId;
+			}
+			fNode = CG[Fn];
+			if(isVisit.find(fNode) == isVisit.end() || !isVisit[fNode])
+			{
+				Q.push(fNode);
+				isVisit[fNode] = true;
+			}
 
-        }
+		}
 
-    }
-    return 0;
+	}
+	return 0;
 
 }
 void ComputeIns::isBBParallel(Module&M, BasicBlock * BB)
 {
-    Function* F = BB->getParent();
-    StringRef fname = F->getName();
-    int regionId = -1;
-    if(fname.startswith(".omp_outlined"))
-        regionId = this->parallelRegion[F];
-    else
-    {
-        CallGraph CG(M);
-        map<Function*, int>::iterator it;
-        for(map<Function*, int>::iterator it = this->parallelRegion.begin();it != this->parallelRegion.end();it++)
-        {
-            Function* FF = it->first;
-            regionId = isIteParallel(M, FF, this->parallelRegion[FF], F);
-            if(regionId > 0)
-                break;
-        }
-    }
-    this->isParaRegion.push_back(regionId);
+	Function* F = BB->getParent();
+	StringRef fname = F->getName();
+	int regionId = -1;
+	if(fname.startswith(".omp_outlined"))
+	  regionId = this->parallelRegion[F];
+	else
+	{
+		CallGraph CG(M);
+		map<Function*, int>::iterator it;
+		for(map<Function*, int>::iterator it = this->parallelRegion.begin();it != this->parallelRegion.end();it++)
+		{
+			Function* FF = it->first;
+			regionId = isIteParallel(M, FF, this->parallelRegion[FF], F);
+			if(regionId > 0)
+			  break;
+		}
+	}
+	this->isParaRegion.push_back(regionId);
 
-    return;
+	return;
 }
 void ComputeIns::judgeIsParallel(Module &M)
 {
-    int regionNum = 1;
-    for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
-        if (F->isDeclaration()) continue;
-        StringRef fname = F->getName();
-        if(fname.startswith(".omp_outlined"))
-        {
-            this->parallelRegion.insert(std::pair<Function*, int>(&*F,regionNum));
-            regionNum++;
-        }
-    }
-    for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
-        if (F->isDeclaration()) continue;
-        StringRef fname = F->getName();
-        errs()<<"=========="<<fname<<"\n";
-        if (fname.find("WriteOpenMPProfile")!=fname.npos) continue;
-        for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
-            for(BasicBlock::iterator IB = BB->begin(), IE = BB->end(); IB != IE; ++IB)
-            {
-                Instruction* ins = &*IB;
-                if(CallInst* CI = dyn_cast<CallInst>(ins))
-                {
-                    Function* callee = CI->getCalledFunction();
-                    if(callee->getName().startswith("__kmpc_fork_call"))
-                    {
-                        this->isParaRegion.push_back(0);
-                    }
+	int regionNum = 1;
+	for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
+		if (F->isDeclaration()) continue;
+		StringRef fname = F->getName();
+		if(fname.startswith(".omp_outlined"))
+		{
+			this->parallelRegion.insert(std::pair<Function*, int>(&*F,regionNum));
+			regionNum++;
+		}
+	}
+	for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
+		if (F->isDeclaration()) continue;
+		StringRef fname = F->getName();
+		errs()<<"=========="<<fname<<"\n";
+		if (fname.find("WriteOpenMPProfile")!=fname.npos) continue;
+		for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
+			for(BasicBlock::iterator IB = BB->begin(), IE = BB->end(); IB != IE; ++IB)
+			{
+				Instruction* ins = &*IB;
+				if(CallInst* CI = dyn_cast<CallInst>(ins))
+				{
+					Function* callee = CI->getCalledFunction();
+					if(callee->getName().startswith("__kmpc_fork_call"))
+					{
+						this->isParaRegion.push_back(0);
+					}
 
-                }
-            }
-            isBBParallel(M, &*BB);
-        }
-    }
+				}
+			}
+			isBBParallel(M, &*BB);
+		}
+	}
 
-    return;
+	return;
 }
 
 
@@ -197,13 +409,13 @@ void ComputeIns::matchingBBwithParallel(Module& M){
 
 	errs() <<"-------------matchingBBwithParallel()-----------------\n";
 
-   judgeIsParallel(M);
+	judgeIsParallel(M);
 
 	vector<int>& parallelInf = this->isParaRegion;
 
 	int BBFlag = 1;
 	for(auto I : parallelInf){
-      errs()<< "--------------"<<I <<"\n";
+		errs()<< "--------------"<<I <<"\n";
 		this->isParallel.insert(pair<int,int>(BBFlag,I));
 		BBFlag++;
 	}
@@ -242,7 +454,7 @@ void ComputeIns::getBinaryOPNumAll(){
 		}
 	}
 
-
+	errs() <<"=================="<< this->OPNum.size() <<"\n";
 }
 //getBinaryOPNum is to get the number of any compute instruction in every block, like add sub.etc
 void ComputeIns::getBinaryOPNum(Module &M){
@@ -253,9 +465,9 @@ void ComputeIns::getBinaryOPNum(Module &M){
 	int add=0,fadd=0,mul=0,fmul=0,sub=0,fsub=0,udiv=0,sdiv=0,fdiv=0,urem=0,srem=0,frem=0;	
 
 	for(auto FB = M.begin(),FE = M.end(); FB!=FE ; ++FB){
-      if (FB->isDeclaration()) continue;
-      StringRef fname = FB->getName();
-      if (fname.find("WriteOpenMPProfile")!=fname.npos) continue;
+		if (FB->isDeclaration()) continue;
+		StringRef fname = FB->getName();
+		if (fname.find("WriteOpenMPProfile")!=fname.npos) continue;
 		for(auto BB = FB->begin(), BE = FB->end(); BB!=BE ; ++BB){
 			for(auto IB = BB->begin(), IE = BB->end(); IB!=IE ; ++IB){
 				Instruction* ins = &*IB;
@@ -350,9 +562,9 @@ void ComputeIns::getBBNum(Module &M){
 
 	int number = 0;
 	for(auto FB = M.begin(),FE = M.end(); FB!=FE ; ++FB){
-      if (FB->isDeclaration()) continue;
-        StringRef fname = FB->getName();
-        if (fname.find("WriteOpenMPProfile")!=fname.npos) continue;
+		if (FB->isDeclaration()) continue;
+		StringRef fname = FB->getName();
+		if (fname.find("WriteOpenMPProfile")!=fname.npos) continue;
 		for(auto BB = FB->begin(), BE = FB->end(); BB!=BE ; ++BB){
 			number ++;
 			for(auto IB = BB->begin(), IE = BB->end(); IB!=IE ;++IB){
@@ -392,8 +604,8 @@ void ComputeIns::getBBFrequency(string s){
 			flag++;
 		}else{
 			flag = 1;
-//			errs() << "-------------------\n"
-//				<< "该核心线程有：\t" << thread.size() << "\t个基本块\n";
+			//			errs() << "-------------------\n"
+			//				<< "该核心线程有：\t" << thread.size() << "\t个基本块\n";
 			this->BBFreq.push_back(thread);
 			thread.clear();
 			thread.push_back(num);
@@ -465,11 +677,11 @@ void ComputeIns::getInsKind(Module &M){
 	int loadNum=0,storeNum=0,boNum=0;
 	vector<int> bb;
 	for(auto FB = M.begin(),FE = M.end(); FB!=FE ; ++FB){
-      if (FB->isDeclaration()) continue;
-      StringRef fname = FB->getName();
-      if (fname.find("WriteOpenMPProfile")!=fname.npos) continue;
+		if (FB->isDeclaration()) continue;
+		StringRef fname = FB->getName();
+		if (fname.find("WriteOpenMPProfile")!=fname.npos) continue;
 		for(auto BB = FB->begin(), BE = FB->end(); BB!=BE ; ++BB){
-		//				errs()<<*BB<<"\n";
+			//				errs()<<*BB<<"\n";
 			for(auto IB = BB->begin(), IE = BB->end(); IB!=IE ; ++IB){
 				Instruction* ins = &*IB;
 				if(isa<LoadInst>(IB)){
@@ -668,9 +880,6 @@ void ComputeIns::getProTime(){
 					}else if(insFlag == 5){
 						time_tmp = time_tmp + ((*it) * (this->time_map.find("mul")->second));
 						insFlag++;
-					}else if(insFlag == 5){
-						time_tmp = time_tmp + ((*it) * (this->time_map.find("mul")->second));
-						insFlag++;
 					}else if(insFlag == 6){
 						time_tmp = time_tmp + ((*it) * (this->time_map.find("fmul")->second));
 						insFlag++;
@@ -699,22 +908,115 @@ void ComputeIns::getProTime(){
 		BBFlag ++;
 	}
 
+	//----------------------------------mathInsNum-------------------------------------------
+	errs() <<"-------------------------------\n";
+	insFlag = 1;
+	BBFlag = 1;
+    i = 0;
+	vector<long long> math_vec;
+	for(iter = this->mathInsTotal.begin() ; iter != this->mathInsTotal.end(); iter++){
+		iter_temp = *iter;
+		for(it = iter_temp.begin(); it != iter_temp.end(); it++){
+		//	math_vec = *it;
+			if(BBFlag <= this->BBNum){
+				if(this->isParallel.find(BBFlag)->second == 0){
+					if(insFlag == 1){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("sqrt")->second));
+						insFlag++;
+					}else if(insFlag == 2){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("fabs")->second));
+						insFlag++;
+					}else if(insFlag == 3){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("log")->second));
+						insFlag++;
+					}else if(insFlag == 4){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("trunc")->second));
+						insFlag++;
+					}else if(insFlag == 5){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("exp")->second));
+						insFlag++;
+					}else if(insFlag == 6){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("cos")->second));
+						insFlag++;
+					}else if(insFlag == 7){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("sin")->second));
+						insFlag++;
+					}else if(insFlag == 8){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("logf")->second));
+						insFlag++;
+					}else if(insFlag == 9){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("pow")->second));
+						insFlag++;
+					}else if(insFlag == 10){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("cabs")->second));
+						insFlag++;
+					}
+				}
+			}else{
+				BBFlag = 1;
+				this->timeInf[i] = this->timeInf[i] + time_tmp;
+				time_tmp = 0;
+				i++;
+				if(this->isParallel.find(BBFlag)->second == 0){
+					if(insFlag == 1){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("sqrt")->second));
+						insFlag++;
+					}else if(insFlag == 2){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("fabs")->second));
+						insFlag++;
+					}else if(insFlag == 3){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("log")->second));
+						insFlag++;
+					}else if(insFlag == 4){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("trunc")->second));
+						insFlag++;
+					}else if(insFlag == 5){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("exp")->second));
+						insFlag++;
+					}else if(insFlag == 6){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("cos")->second));
+						insFlag++;
+					}else if(insFlag == 7){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("sin")->second));
+						insFlag++;
+					}else if(insFlag == 8){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("logf")->second));
+						insFlag++;
+					}else if(insFlag == 9){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("pow")->second));
+						insFlag++;
+					}else if(insFlag == 10){
+						time_tmp = time_tmp + ((*it) * (this->time_map.find("cabs")->second));
+						insFlag++;
+					}
+
+				}
+			}
+		}	
+
+		insFlag = 1;
+		BBFlag ++;
+	}
+
+
+
 	this->timeInf[i] = this->timeInf[i] + time_tmp;
 
 	errs() << "\n\n\n";
 	int p=1;
 
-   double serial_time = 0;
+	double serial_time = 0;
 	for(auto I : this->timeInf){
 
-	//	errs() <<" 核心线程:\t" << p <<"\t 串行时间为：\t" << I <<"ns\n";
-	   serial_time += I;
-      p++;
+		//	errs() <<" 核心线程:\t" << p <<"\t 串行时间为：\t" << I <<"ns\n";
+		serial_time += I;
+		p++;
 	}
 
-   errs() <<"-----------------------------\n"
-      <<"串行域时间为：\t" << serial_time << "\n"
-      <<"-------------------------------\n";
+
+	errs() <<"-----------------------------\n"
+		<<"串行域时间为：\t" << serial_time << "\n"
+		<<"-------------------------------\n";
 
 	map<int,int>::iterator miter;
 	miter = this->isParallel.begin();
@@ -730,8 +1032,8 @@ void ComputeIns::getProTime(){
 	errs() << "并行域共有：\t" << parallelSize <<"个\n";
 
 	int threadnum = this->OPNum.size() / this->BBNum;
-//	errs() <<"共有线程数目：\t" << threadnum <<"\n";
-	
+	//	errs() <<"共有线程数目：\t" << threadnum <<"\n";
+
 	vector<double> parallelTime;
 	vector<vector<double>> parallel;
 	vector<long long> tmp;
@@ -740,28 +1042,28 @@ void ComputeIns::getProTime(){
 	//当前的位置
 	int BBLocationNow;
 	double parallel_time_tmp = 0 ;
-	
+
 	for(int pi = 1; pi <= parallelSize ; pi++){
-		
+
 		for(int z=0 ; z < threadnum ; z++){
 			parallelTime.push_back(0);
 		}
-		
+
 		miter = this->isParallel.begin();
 		while(miter != this->isParallel.end()){
 			if(miter->second == pi){
 				BBLocation = miter->first - 1;
-			//	errs() << "BBLocation is :\t" << BBLocation << "\n";
+				//	errs() << "BBLocation is :\t" << BBLocation << "\n";
 				BBLocationNow = BBLocation;
 				int threadFlag = 0;
 				while(BBLocationNow < this->OPNum.size()){			
 					parallel_time_tmp = 0;
 
-					tmp = LoadAndStore[BBLocationNow];
-//					errs() << "----------"<<tmp[0]<<"---------"<<tmp[1]<<"------\n";
+					tmp = this->LoadAndStore[BBLocationNow];
+					//					errs() << "----------"<<tmp[0]<<"---------"<<tmp[1]<<"------\n";
 					parallel_time_tmp = parallel_time_tmp + tmp[0] * this->time_map.find("load")->second + tmp[1] * this->time_map.find("store")->second; 
 
-					tmp = OPNum[BBLocationNow];
+					tmp = this->OPNum[BBLocationNow];
 					parallel_time_tmp = parallel_time_tmp
 						+tmp[0] * this->time_map.find("add")->second 
 						+tmp[1] * this->time_map.find("fadd")->second 
@@ -775,8 +1077,22 @@ void ComputeIns::getProTime(){
 						+tmp[9] * this->time_map.find("urem")->second 
 						+tmp[10] * this->time_map.find("srem")->second
 						+tmp[11] * this->time_map.find("frem")->second ;
-					
+
 					parallelTime[threadFlag] = parallelTime[threadFlag] + parallel_time_tmp;
+
+//				errs() << "-----------------mathInsTotal:\t" << this->mathInsTotal.size() <<"-----------------\n";
+					tmp = this->mathInsTotal[BBLocationNow];
+					parallel_time_tmp = parallel_time_tmp
+						+tmp[0] * this->mathTime.find("sqrt")->second
+						+tmp[1] * this->mathTime.find("fabs")->second
+						+tmp[2] * this->mathTime.find("log")->second
+						+tmp[3] * this->mathTime.find("trunc")->second
+						+tmp[4] * this->mathTime.find("exp")->second
+						+tmp[5] * this->mathTime.find("cos")->second
+						+tmp[6] * this->mathTime.find("sin")->second
+						+tmp[7] * this->mathTime.find("logf")->second
+						+tmp[8] * this->mathTime.find("pow")->second
+						+tmp[9] * this->mathTime.find("cabs")->second;
 
 					threadFlag++;
 					BBLocationNow = BBLocationNow + this->BBNum;
@@ -795,20 +1111,20 @@ void ComputeIns::getProTime(){
 	vector<double>::iterator pit;   
 
 	int ppflag = 1;
-   double pt_tmp = 0;
+	double pt_tmp = 0;
 	for(piter = parallel.begin() ; piter != parallel.end() ; piter++){
 		piter_temp = *piter;
-		
+
 		pit = max_element(begin(piter_temp),end(piter_temp));
 
 		errs() <<"并行域\t" << ppflag << "\t时间为：\t" << *pit <<"ns\n";
-      
-      pt_tmp  += *pit; 
+
+		pt_tmp  += *pit; 
 		ppflag++;
 	}
 
-   errs() <<"-------------------------------\n"
-      <<"总时间为：\t" << pt_tmp + serial_time << "ns\n";
+	errs() <<"-------------------------------\n"
+		<<"总时间为：\t" << pt_tmp + serial_time << "ns\n";
 }
 bool ComputeIns::runOnModule(Module &M){
 
@@ -816,12 +1132,14 @@ bool ComputeIns::runOnModule(Module &M){
 
 	string s = "data.txt";
 	string t = "time.txt";
-	string p = "parallel.txt";
+	string p = "mathTime.txt";
 	//获取12条指令的时间
 	this->getTime(t);
 	//遍历基本块得到基本块数量
 	this->getBBNum(M);
 
+	this->getMathInsTime(p);
+	this->getMathInsNumInBB(M);
 	errs() << "--------------------------------------------\n"
 		<<"遍历得到的基本块个数为：\t" << this->BBNum << "\n";
 
@@ -872,7 +1190,7 @@ bool ComputeIns::runOnModule(Module &M){
 	 **/
 	this->getBinaryOPNumAll();
 	//test and pirnt all the binary operator , load and store instruction with frequency
-/**	errs() << "-----------------各种信息如下---------------\n";
+	/**	errs() << "-----------------各种信息如下---------------\n";
 	  int	BBnum = 1;
 	  for(iter = this->OPNum.begin() ; iter != this->OPNum.end(); iter++){
 	  iter_temp = *iter;
@@ -893,9 +1211,11 @@ bool ComputeIns::runOnModule(Module &M){
 	  BBnum++;
 	  }
 
-	errs() <<"-------------------------------------------\n";
-**/
-   this->getProTime();
+	  errs() <<"-------------------------------------------\n";
+	 **/
+	this->getMathInsNumTotal();
+	this->getProTime();
+//	this->test();
 	return true;
 }
 

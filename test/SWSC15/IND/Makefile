@@ -5,10 +5,10 @@ F90	= ifort
 CC	= icc
 #
 #
-COMP	= -openmp
-FOMP	= -openmp
-COPTS	=  -O3 -xHost -fno-inline -fno-alias
-FOPTS	=  -O3 -xHost -fno-inline
+COMP	= -fopenmp
+FOMP	= -fopenmp
+COPTS	=  -O3
+FOPTS	=  -O3 
 FLONG	= 
 #
 #

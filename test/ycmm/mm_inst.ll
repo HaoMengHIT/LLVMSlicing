@@ -24,86 +24,86 @@ target triple = "x86_64-pc-linux-gnu"
 ; Function Attrs: noinline nounwind optnone uwtable
 define double @calcuPartOfMatrixMulti(i32, i32) #0 {
   %3 = call i32 @sched_getcpu()
-  %4 = alloca i32, align 4
-  %5 = alloca i32, align 4
-  %6 = alloca double, align 8
-  %7 = alloca i32, align 4
-  store i32 %0, i32* %4, align 4
-  store i32 %1, i32* %5, align 4
-  store double 0.000000e+00, double* %6, align 8
-  store i32 0, i32* %7, align 4
   %IndexSExt = sext i32 %3 to i64
   %IndexValMul = mul i64 %IndexSExt, 38
   %IndexValAdd = add i64 %IndexValMul, 0
-  %8 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
-  %OldBBCounter = load i64, i64* %8
+  %4 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
+  %OldBBCounter = load i64, i64* %4
   %NewBBCounter = add i64 %OldBBCounter, 1
-  store i64 %NewBBCounter, i64* %8
+  store i64 %NewBBCounter, i64* %4
+  %5 = alloca i32, align 4
+  %6 = alloca i32, align 4
+  %7 = alloca double, align 8
+  %8 = alloca i32, align 4
+  store i32 %0, i32* %5, align 4
+  store i32 %1, i32* %6, align 4
+  store double 0.000000e+00, double* %7, align 8
+  store i32 0, i32* %8, align 4
   br label %9
 
 ; <label>:9:                                      ; preds = %32, %2
-  %10 = load i32, i32* %7, align 4
-  %11 = icmp slt i32 %10, 3000
   %IndexSExt1 = sext i32 %3 to i64
   %IndexValMul2 = mul i64 %IndexSExt1, 38
   %IndexValAdd3 = add i64 %IndexValMul2, 1
-  %12 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd3
-  %OldBBCounter4 = load i64, i64* %12
+  %10 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd3
+  %OldBBCounter4 = load i64, i64* %10
   %NewBBCounter5 = add i64 %OldBBCounter4, 1
-  store i64 %NewBBCounter5, i64* %12
-  br i1 %11, label %13, label %36
+  store i64 %NewBBCounter5, i64* %10
+  %11 = load i32, i32* %8, align 4
+  %12 = icmp slt i32 %11, 3000
+  br i1 %12, label %13, label %36
 
 ; <label>:13:                                     ; preds = %9
-  %14 = load i32, i32* %4, align 4
-  %15 = sext i32 %14 to i64
-  %16 = getelementptr inbounds [3000 x [3000 x double]], [3000 x [3000 x double]]* @firstParaMatrix, i64 0, i64 %15
-  %17 = load i32, i32* %7, align 4
-  %18 = sext i32 %17 to i64
-  %19 = getelementptr inbounds [3000 x double], [3000 x double]* %16, i64 0, i64 %18
-  %20 = load double, double* %19, align 8
-  %21 = load i32, i32* %7, align 4
-  %22 = sext i32 %21 to i64
-  %23 = getelementptr inbounds [3000 x [3000 x double]], [3000 x [3000 x double]]* @secondParaMatrix, i64 0, i64 %22
-  %24 = load i32, i32* %5, align 4
-  %25 = sext i32 %24 to i64
-  %26 = getelementptr inbounds [3000 x double], [3000 x double]* %23, i64 0, i64 %25
-  %27 = load double, double* %26, align 8
-  %28 = fmul double %20, %27
-  %29 = load double, double* %6, align 8
-  %30 = fadd double %29, %28
-  store double %30, double* %6, align 8
   %IndexSExt6 = sext i32 %3 to i64
   %IndexValMul7 = mul i64 %IndexSExt6, 38
   %IndexValAdd8 = add i64 %IndexValMul7, 2
-  %31 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd8
-  %OldBBCounter9 = load i64, i64* %31
+  %14 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd8
+  %OldBBCounter9 = load i64, i64* %14
   %NewBBCounter10 = add i64 %OldBBCounter9, 1
-  store i64 %NewBBCounter10, i64* %31
+  store i64 %NewBBCounter10, i64* %14
+  %15 = load i32, i32* %5, align 4
+  %16 = sext i32 %15 to i64
+  %17 = getelementptr inbounds [3000 x [3000 x double]], [3000 x [3000 x double]]* @firstParaMatrix, i64 0, i64 %16
+  %18 = load i32, i32* %8, align 4
+  %19 = sext i32 %18 to i64
+  %20 = getelementptr inbounds [3000 x double], [3000 x double]* %17, i64 0, i64 %19
+  %21 = load double, double* %20, align 8
+  %22 = load i32, i32* %8, align 4
+  %23 = sext i32 %22 to i64
+  %24 = getelementptr inbounds [3000 x [3000 x double]], [3000 x [3000 x double]]* @secondParaMatrix, i64 0, i64 %23
+  %25 = load i32, i32* %6, align 4
+  %26 = sext i32 %25 to i64
+  %27 = getelementptr inbounds [3000 x double], [3000 x double]* %24, i64 0, i64 %26
+  %28 = load double, double* %27, align 8
+  %29 = fmul double %21, %28
+  %30 = load double, double* %7, align 8
+  %31 = fadd double %30, %29
+  store double %31, double* %7, align 8
   br label %32
 
 ; <label>:32:                                     ; preds = %13
-  %33 = load i32, i32* %7, align 4
-  %34 = add nsw i32 %33, 1
-  store i32 %34, i32* %7, align 4
   %IndexSExt11 = sext i32 %3 to i64
   %IndexValMul12 = mul i64 %IndexSExt11, 38
   %IndexValAdd13 = add i64 %IndexValMul12, 3
-  %35 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd13
-  %OldBBCounter14 = load i64, i64* %35
+  %33 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd13
+  %OldBBCounter14 = load i64, i64* %33
   %NewBBCounter15 = add i64 %OldBBCounter14, 1
-  store i64 %NewBBCounter15, i64* %35
+  store i64 %NewBBCounter15, i64* %33
+  %34 = load i32, i32* %8, align 4
+  %35 = add nsw i32 %34, 1
+  store i32 %35, i32* %8, align 4
   br label %9
 
 ; <label>:36:                                     ; preds = %9
-  %37 = load double, double* %6, align 8
   %IndexSExt16 = sext i32 %3 to i64
   %IndexValMul17 = mul i64 %IndexSExt16, 38
   %IndexValAdd18 = add i64 %IndexValMul17, 4
-  %38 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd18
-  %OldBBCounter19 = load i64, i64* %38
+  %37 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd18
+  %OldBBCounter19 = load i64, i64* %37
   %NewBBCounter20 = add i64 %OldBBCounter19, 1
-  store i64 %NewBBCounter20, i64* %38
-  ret double %37
+  store i64 %NewBBCounter20, i64* %37
+  %38 = load double, double* %7, align 8
+  ret double %38
 }
 
 ; Function Attrs: noinline nounwind optnone uwtable
@@ -131,9 +131,15 @@ define void @matrixInit() #0 {
 ; Function Attrs: noinline nounwind optnone uwtable
 define internal void @.omp_outlined.(i32* noalias, i32* noalias) #0 {
   %3 = call i32 @sched_getcpu()
-  %4 = alloca i32*, align 8
+  %IndexSExt = sext i32 %3 to i64
+  %IndexValMul = mul i64 %IndexSExt, 38
+  %IndexValAdd = add i64 %IndexValMul, 7
+  %4 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
+  %OldBBCounter = load i64, i64* %4
+  %NewBBCounter = add i64 %OldBBCounter, 1
+  store i64 %NewBBCounter, i64* %4
   %5 = alloca i32*, align 8
-  %6 = alloca i32, align 4
+  %6 = alloca i32*, align 8
   %7 = alloca i32, align 4
   %8 = alloca i32, align 4
   %9 = alloca i32, align 4
@@ -141,25 +147,19 @@ define internal void @.omp_outlined.(i32* noalias, i32* noalias) #0 {
   %11 = alloca i32, align 4
   %12 = alloca i32, align 4
   %13 = alloca i32, align 4
-  store i32* %0, i32** %4, align 8
-  store i32* %1, i32** %5, align 8
-  store i32 0, i32* %8, align 4
-  store i32 2999, i32* %9, align 4
-  store i32 1, i32* %10, align 4
-  store i32 0, i32* %11, align 4
-  %14 = load i32*, i32** %4, align 8
-  %15 = load i32, i32* %14, align 4
-  call void @__kmpc_for_static_init_4(%ident_t* @1, i32 %15, i32 34, i32* %11, i32* %8, i32* %9, i32* %10, i32 1, i32 1)
-  %16 = load i32, i32* %9, align 4
-  %17 = icmp sgt i32 %16, 2999
-  %IndexSExt = sext i32 %3 to i64
-  %IndexValMul = mul i64 %IndexSExt, 38
-  %IndexValAdd = add i64 %IndexValMul, 7
-  %18 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
-  %OldBBCounter = load i64, i64* %18
-  %NewBBCounter = add i64 %OldBBCounter, 1
-  store i64 %NewBBCounter, i64* %18
-  br i1 %17, label %19, label %21
+  %14 = alloca i32, align 4
+  store i32* %0, i32** %5, align 8
+  store i32* %1, i32** %6, align 8
+  store i32 0, i32* %9, align 4
+  store i32 2999, i32* %10, align 4
+  store i32 1, i32* %11, align 4
+  store i32 0, i32* %12, align 4
+  %15 = load i32*, i32** %5, align 8
+  %16 = load i32, i32* %15, align 4
+  call void @__kmpc_for_static_init_4(%ident_t* @1, i32 %16, i32 34, i32* %12, i32* %9, i32* %10, i32* %11, i32 1, i32 1)
+  %17 = load i32, i32* %10, align 4
+  %18 = icmp sgt i32 %17, 2999
+  br i1 %18, label %19, label %21
 
 ; <label>:19:                                     ; preds = %2
   %IndexSExt1 = sext i32 %3 to i64
@@ -172,111 +172,111 @@ define internal void @.omp_outlined.(i32* noalias, i32* noalias) #0 {
   br label %24
 
 ; <label>:21:                                     ; preds = %2
-  %22 = load i32, i32* %9, align 4
   %IndexSExt6 = sext i32 %3 to i64
   %IndexValMul7 = mul i64 %IndexSExt6, 38
   %IndexValAdd8 = add i64 %IndexValMul7, 9
-  %23 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd8
-  %OldBBCounter9 = load i64, i64* %23
+  %22 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd8
+  %OldBBCounter9 = load i64, i64* %22
   %NewBBCounter10 = add i64 %OldBBCounter9, 1
-  store i64 %NewBBCounter10, i64* %23
+  store i64 %NewBBCounter10, i64* %22
+  %23 = load i32, i32* %10, align 4
   br label %24
 
 ; <label>:24:                                     ; preds = %21, %19
-  %25 = phi i32 [ 2999, %19 ], [ %22, %21 ]
-  store i32 %25, i32* %9, align 4
-  %26 = load i32, i32* %8, align 4
-  store i32 %26, i32* %6, align 4
+  %25 = phi i32 [ 2999, %19 ], [ %23, %21 ]
   %IndexSExt11 = sext i32 %3 to i64
   %IndexValMul12 = mul i64 %IndexSExt11, 38
   %IndexValAdd13 = add i64 %IndexValMul12, 10
-  %27 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd13
-  %OldBBCounter14 = load i64, i64* %27
+  %26 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd13
+  %OldBBCounter14 = load i64, i64* %26
   %NewBBCounter15 = add i64 %OldBBCounter14, 1
-  store i64 %NewBBCounter15, i64* %27
+  store i64 %NewBBCounter15, i64* %26
+  store i32 %25, i32* %10, align 4
+  %27 = load i32, i32* %9, align 4
+  store i32 %27, i32* %7, align 4
   br label %28
 
 ; <label>:28:                                     ; preds = %70, %24
-  %29 = load i32, i32* %6, align 4
-  %30 = load i32, i32* %9, align 4
-  %31 = icmp sle i32 %29, %30
   %IndexSExt16 = sext i32 %3 to i64
   %IndexValMul17 = mul i64 %IndexSExt16, 38
   %IndexValAdd18 = add i64 %IndexValMul17, 11
-  %32 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd18
-  %OldBBCounter19 = load i64, i64* %32
+  %29 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd18
+  %OldBBCounter19 = load i64, i64* %29
   %NewBBCounter20 = add i64 %OldBBCounter19, 1
-  store i64 %NewBBCounter20, i64* %32
-  br i1 %31, label %33, label %74
+  store i64 %NewBBCounter20, i64* %29
+  %30 = load i32, i32* %7, align 4
+  %31 = load i32, i32* %10, align 4
+  %32 = icmp sle i32 %30, %31
+  br i1 %32, label %33, label %74
 
 ; <label>:33:                                     ; preds = %28
-  %34 = load i32, i32* %6, align 4
-  %35 = mul nsw i32 %34, 1
-  %36 = add nsw i32 0, %35
-  store i32 %36, i32* %12, align 4
-  store i32 0, i32* %13, align 4
   %IndexSExt21 = sext i32 %3 to i64
   %IndexValMul22 = mul i64 %IndexSExt21, 38
   %IndexValAdd23 = add i64 %IndexValMul22, 12
-  %37 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd23
-  %OldBBCounter24 = load i64, i64* %37
+  %34 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd23
+  %OldBBCounter24 = load i64, i64* %34
   %NewBBCounter25 = add i64 %OldBBCounter24, 1
-  store i64 %NewBBCounter25, i64* %37
+  store i64 %NewBBCounter25, i64* %34
+  %35 = load i32, i32* %7, align 4
+  %36 = mul nsw i32 %35, 1
+  %37 = add nsw i32 0, %36
+  store i32 %37, i32* %13, align 4
+  store i32 0, i32* %14, align 4
   br label %38
 
 ; <label>:38:                                     ; preds = %62, %33
-  %39 = load i32, i32* %13, align 4
-  %40 = icmp slt i32 %39, 3000
   %IndexSExt26 = sext i32 %3 to i64
   %IndexValMul27 = mul i64 %IndexSExt26, 38
   %IndexValAdd28 = add i64 %IndexValMul27, 13
-  %41 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd28
-  %OldBBCounter29 = load i64, i64* %41
+  %39 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd28
+  %OldBBCounter29 = load i64, i64* %39
   %NewBBCounter30 = add i64 %OldBBCounter29, 1
-  store i64 %NewBBCounter30, i64* %41
-  br i1 %40, label %42, label %66
+  store i64 %NewBBCounter30, i64* %39
+  %40 = load i32, i32* %14, align 4
+  %41 = icmp slt i32 %40, 3000
+  br i1 %41, label %42, label %66
 
 ; <label>:42:                                     ; preds = %38
-  %43 = load i32, i32* %12, align 4
-  %44 = load i32, i32* %13, align 4
-  %45 = add nsw i32 %43, %44
-  %46 = sitofp i32 %45 to double
-  %47 = load i32, i32* %12, align 4
-  %48 = sext i32 %47 to i64
-  %49 = getelementptr inbounds [3000 x [3000 x double]], [3000 x [3000 x double]]* @firstParaMatrix, i64 0, i64 %48
-  %50 = load i32, i32* %13, align 4
-  %51 = sext i32 %50 to i64
-  %52 = getelementptr inbounds [3000 x double], [3000 x double]* %49, i64 0, i64 %51
-  store double %46, double* %52, align 8
-  %53 = load i32, i32* %12, align 4
-  %54 = sitofp i32 %53 to double
-  %55 = load i32, i32* %12, align 4
-  %56 = sext i32 %55 to i64
-  %57 = getelementptr inbounds [3000 x [3000 x double]], [3000 x [3000 x double]]* @secondParaMatrix, i64 0, i64 %56
-  %58 = load i32, i32* %13, align 4
-  %59 = sext i32 %58 to i64
-  %60 = getelementptr inbounds [3000 x double], [3000 x double]* %57, i64 0, i64 %59
-  store double %54, double* %60, align 8
   %IndexSExt31 = sext i32 %3 to i64
   %IndexValMul32 = mul i64 %IndexSExt31, 38
   %IndexValAdd33 = add i64 %IndexValMul32, 14
-  %61 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd33
-  %OldBBCounter34 = load i64, i64* %61
+  %43 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd33
+  %OldBBCounter34 = load i64, i64* %43
   %NewBBCounter35 = add i64 %OldBBCounter34, 1
-  store i64 %NewBBCounter35, i64* %61
+  store i64 %NewBBCounter35, i64* %43
+  %44 = load i32, i32* %13, align 4
+  %45 = load i32, i32* %14, align 4
+  %46 = add nsw i32 %44, %45
+  %47 = sitofp i32 %46 to double
+  %48 = load i32, i32* %13, align 4
+  %49 = sext i32 %48 to i64
+  %50 = getelementptr inbounds [3000 x [3000 x double]], [3000 x [3000 x double]]* @firstParaMatrix, i64 0, i64 %49
+  %51 = load i32, i32* %14, align 4
+  %52 = sext i32 %51 to i64
+  %53 = getelementptr inbounds [3000 x double], [3000 x double]* %50, i64 0, i64 %52
+  store double %47, double* %53, align 8
+  %54 = load i32, i32* %13, align 4
+  %55 = sitofp i32 %54 to double
+  %56 = load i32, i32* %13, align 4
+  %57 = sext i32 %56 to i64
+  %58 = getelementptr inbounds [3000 x [3000 x double]], [3000 x [3000 x double]]* @secondParaMatrix, i64 0, i64 %57
+  %59 = load i32, i32* %14, align 4
+  %60 = sext i32 %59 to i64
+  %61 = getelementptr inbounds [3000 x double], [3000 x double]* %58, i64 0, i64 %60
+  store double %55, double* %61, align 8
   br label %62
 
 ; <label>:62:                                     ; preds = %42
-  %63 = load i32, i32* %13, align 4
-  %64 = add nsw i32 %63, 1
-  store i32 %64, i32* %13, align 4
   %IndexSExt36 = sext i32 %3 to i64
   %IndexValMul37 = mul i64 %IndexSExt36, 38
   %IndexValAdd38 = add i64 %IndexValMul37, 15
-  %65 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd38
-  %OldBBCounter39 = load i64, i64* %65
+  %63 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd38
+  %OldBBCounter39 = load i64, i64* %63
   %NewBBCounter40 = add i64 %OldBBCounter39, 1
-  store i64 %NewBBCounter40, i64* %65
+  store i64 %NewBBCounter40, i64* %63
+  %64 = load i32, i32* %14, align 4
+  %65 = add nsw i32 %64, 1
+  store i32 %65, i32* %14, align 4
   br label %38
 
 ; <label>:66:                                     ; preds = %38
@@ -300,16 +300,16 @@ define internal void @.omp_outlined.(i32* noalias, i32* noalias) #0 {
   br label %70
 
 ; <label>:70:                                     ; preds = %68
-  %71 = load i32, i32* %6, align 4
-  %72 = add nsw i32 %71, 1
-  store i32 %72, i32* %6, align 4
   %IndexSExt51 = sext i32 %3 to i64
   %IndexValMul52 = mul i64 %IndexSExt51, 38
   %IndexValAdd53 = add i64 %IndexValMul52, 18
-  %73 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd53
-  %OldBBCounter54 = load i64, i64* %73
+  %71 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd53
+  %OldBBCounter54 = load i64, i64* %71
   %NewBBCounter55 = add i64 %OldBBCounter54, 1
-  store i64 %NewBBCounter55, i64* %73
+  store i64 %NewBBCounter55, i64* %71
+  %72 = load i32, i32* %7, align 4
+  %73 = add nsw i32 %72, 1
+  store i32 %73, i32* %7, align 4
   br label %28
 
 ; <label>:74:                                     ; preds = %28
@@ -323,7 +323,6 @@ define internal void @.omp_outlined.(i32* noalias, i32* noalias) #0 {
   br label %76
 
 ; <label>:76:                                     ; preds = %74
-  call void @__kmpc_for_static_fini(%ident_t* @1, i32 %15)
   %IndexSExt61 = sext i32 %3 to i64
   %IndexValMul62 = mul i64 %IndexSExt61, 38
   %IndexValAdd63 = add i64 %IndexValMul62, 20
@@ -331,6 +330,7 @@ define internal void @.omp_outlined.(i32* noalias, i32* noalias) #0 {
   %OldBBCounter64 = load i64, i64* %77
   %NewBBCounter65 = add i64 %OldBBCounter64, 1
   store i64 %NewBBCounter65, i64* %77
+  call void @__kmpc_for_static_fini(%ident_t* @1, i32 %16)
   ret void
 }
 
@@ -365,9 +365,15 @@ define void @matrixMulti() #0 {
 ; Function Attrs: noinline nounwind optnone uwtable
 define internal void @.omp_outlined..1(i32* noalias, i32* noalias) #0 {
   %3 = call i32 @sched_getcpu()
-  %4 = alloca i32*, align 8
+  %IndexSExt = sext i32 %3 to i64
+  %IndexValMul = mul i64 %IndexSExt, 38
+  %IndexValAdd = add i64 %IndexValMul, 23
+  %4 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
+  %OldBBCounter = load i64, i64* %4
+  %NewBBCounter = add i64 %OldBBCounter, 1
+  store i64 %NewBBCounter, i64* %4
   %5 = alloca i32*, align 8
-  %6 = alloca i32, align 4
+  %6 = alloca i32*, align 8
   %7 = alloca i32, align 4
   %8 = alloca i32, align 4
   %9 = alloca i32, align 4
@@ -375,25 +381,19 @@ define internal void @.omp_outlined..1(i32* noalias, i32* noalias) #0 {
   %11 = alloca i32, align 4
   %12 = alloca i32, align 4
   %13 = alloca i32, align 4
-  store i32* %0, i32** %4, align 8
-  store i32* %1, i32** %5, align 8
-  store i32 0, i32* %8, align 4
-  store i32 2999, i32* %9, align 4
-  store i32 1, i32* %10, align 4
-  store i32 0, i32* %11, align 4
-  %14 = load i32*, i32** %4, align 8
-  %15 = load i32, i32* %14, align 4
-  call void @__kmpc_for_static_init_4(%ident_t* @1, i32 %15, i32 34, i32* %11, i32* %8, i32* %9, i32* %10, i32 1, i32 1)
-  %16 = load i32, i32* %9, align 4
-  %17 = icmp sgt i32 %16, 2999
-  %IndexSExt = sext i32 %3 to i64
-  %IndexValMul = mul i64 %IndexSExt, 38
-  %IndexValAdd = add i64 %IndexValMul, 23
-  %18 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
-  %OldBBCounter = load i64, i64* %18
-  %NewBBCounter = add i64 %OldBBCounter, 1
-  store i64 %NewBBCounter, i64* %18
-  br i1 %17, label %19, label %21
+  %14 = alloca i32, align 4
+  store i32* %0, i32** %5, align 8
+  store i32* %1, i32** %6, align 8
+  store i32 0, i32* %9, align 4
+  store i32 2999, i32* %10, align 4
+  store i32 1, i32* %11, align 4
+  store i32 0, i32* %12, align 4
+  %15 = load i32*, i32** %5, align 8
+  %16 = load i32, i32* %15, align 4
+  call void @__kmpc_for_static_init_4(%ident_t* @1, i32 %16, i32 34, i32* %12, i32* %9, i32* %10, i32* %11, i32 1, i32 1)
+  %17 = load i32, i32* %10, align 4
+  %18 = icmp sgt i32 %17, 2999
+  br i1 %18, label %19, label %21
 
 ; <label>:19:                                     ; preds = %2
   %IndexSExt1 = sext i32 %3 to i64
@@ -406,101 +406,101 @@ define internal void @.omp_outlined..1(i32* noalias, i32* noalias) #0 {
   br label %24
 
 ; <label>:21:                                     ; preds = %2
-  %22 = load i32, i32* %9, align 4
   %IndexSExt6 = sext i32 %3 to i64
   %IndexValMul7 = mul i64 %IndexSExt6, 38
   %IndexValAdd8 = add i64 %IndexValMul7, 25
-  %23 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd8
-  %OldBBCounter9 = load i64, i64* %23
+  %22 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd8
+  %OldBBCounter9 = load i64, i64* %22
   %NewBBCounter10 = add i64 %OldBBCounter9, 1
-  store i64 %NewBBCounter10, i64* %23
+  store i64 %NewBBCounter10, i64* %22
+  %23 = load i32, i32* %10, align 4
   br label %24
 
 ; <label>:24:                                     ; preds = %21, %19
-  %25 = phi i32 [ 2999, %19 ], [ %22, %21 ]
-  store i32 %25, i32* %9, align 4
-  %26 = load i32, i32* %8, align 4
-  store i32 %26, i32* %6, align 4
+  %25 = phi i32 [ 2999, %19 ], [ %23, %21 ]
   %IndexSExt11 = sext i32 %3 to i64
   %IndexValMul12 = mul i64 %IndexSExt11, 38
   %IndexValAdd13 = add i64 %IndexValMul12, 26
-  %27 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd13
-  %OldBBCounter14 = load i64, i64* %27
+  %26 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd13
+  %OldBBCounter14 = load i64, i64* %26
   %NewBBCounter15 = add i64 %OldBBCounter14, 1
-  store i64 %NewBBCounter15, i64* %27
+  store i64 %NewBBCounter15, i64* %26
+  store i32 %25, i32* %10, align 4
+  %27 = load i32, i32* %9, align 4
+  store i32 %27, i32* %7, align 4
   br label %28
 
 ; <label>:28:                                     ; preds = %61, %24
-  %29 = load i32, i32* %6, align 4
-  %30 = load i32, i32* %9, align 4
-  %31 = icmp sle i32 %29, %30
   %IndexSExt16 = sext i32 %3 to i64
   %IndexValMul17 = mul i64 %IndexSExt16, 38
   %IndexValAdd18 = add i64 %IndexValMul17, 27
-  %32 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd18
-  %OldBBCounter19 = load i64, i64* %32
+  %29 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd18
+  %OldBBCounter19 = load i64, i64* %29
   %NewBBCounter20 = add i64 %OldBBCounter19, 1
-  store i64 %NewBBCounter20, i64* %32
-  br i1 %31, label %33, label %65
+  store i64 %NewBBCounter20, i64* %29
+  %30 = load i32, i32* %7, align 4
+  %31 = load i32, i32* %10, align 4
+  %32 = icmp sle i32 %30, %31
+  br i1 %32, label %33, label %65
 
 ; <label>:33:                                     ; preds = %28
-  %34 = load i32, i32* %6, align 4
-  %35 = mul nsw i32 %34, 1
-  %36 = add nsw i32 0, %35
-  store i32 %36, i32* %12, align 4
-  store i32 0, i32* %13, align 4
   %IndexSExt21 = sext i32 %3 to i64
   %IndexValMul22 = mul i64 %IndexSExt21, 38
   %IndexValAdd23 = add i64 %IndexValMul22, 28
-  %37 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd23
-  %OldBBCounter24 = load i64, i64* %37
+  %34 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd23
+  %OldBBCounter24 = load i64, i64* %34
   %NewBBCounter25 = add i64 %OldBBCounter24, 1
-  store i64 %NewBBCounter25, i64* %37
+  store i64 %NewBBCounter25, i64* %34
+  %35 = load i32, i32* %7, align 4
+  %36 = mul nsw i32 %35, 1
+  %37 = add nsw i32 0, %36
+  store i32 %37, i32* %13, align 4
+  store i32 0, i32* %14, align 4
   br label %38
 
 ; <label>:38:                                     ; preds = %53, %33
-  %39 = load i32, i32* %13, align 4
-  %40 = icmp slt i32 %39, 3000
   %IndexSExt26 = sext i32 %3 to i64
   %IndexValMul27 = mul i64 %IndexSExt26, 38
   %IndexValAdd28 = add i64 %IndexValMul27, 29
-  %41 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd28
-  %OldBBCounter29 = load i64, i64* %41
+  %39 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd28
+  %OldBBCounter29 = load i64, i64* %39
   %NewBBCounter30 = add i64 %OldBBCounter29, 1
-  store i64 %NewBBCounter30, i64* %41
-  br i1 %40, label %42, label %57
+  store i64 %NewBBCounter30, i64* %39
+  %40 = load i32, i32* %14, align 4
+  %41 = icmp slt i32 %40, 3000
+  br i1 %41, label %42, label %57
 
 ; <label>:42:                                     ; preds = %38
-  %43 = load i32, i32* %12, align 4
-  %44 = load i32, i32* %13, align 4
-  %45 = call double @calcuPartOfMatrixMulti(i32 %43, i32 %44)
-  %46 = load i32, i32* %12, align 4
-  %47 = sext i32 %46 to i64
-  %48 = getelementptr inbounds [3000 x [3000 x double]], [3000 x [3000 x double]]* @matrixMultiResult, i64 0, i64 %47
-  %49 = load i32, i32* %13, align 4
-  %50 = sext i32 %49 to i64
-  %51 = getelementptr inbounds [3000 x double], [3000 x double]* %48, i64 0, i64 %50
-  store double %45, double* %51, align 8
   %IndexSExt31 = sext i32 %3 to i64
   %IndexValMul32 = mul i64 %IndexSExt31, 38
   %IndexValAdd33 = add i64 %IndexValMul32, 30
-  %52 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd33
-  %OldBBCounter34 = load i64, i64* %52
+  %43 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd33
+  %OldBBCounter34 = load i64, i64* %43
   %NewBBCounter35 = add i64 %OldBBCounter34, 1
-  store i64 %NewBBCounter35, i64* %52
+  store i64 %NewBBCounter35, i64* %43
+  %44 = load i32, i32* %13, align 4
+  %45 = load i32, i32* %14, align 4
+  %46 = call double @calcuPartOfMatrixMulti(i32 %44, i32 %45)
+  %47 = load i32, i32* %13, align 4
+  %48 = sext i32 %47 to i64
+  %49 = getelementptr inbounds [3000 x [3000 x double]], [3000 x [3000 x double]]* @matrixMultiResult, i64 0, i64 %48
+  %50 = load i32, i32* %14, align 4
+  %51 = sext i32 %50 to i64
+  %52 = getelementptr inbounds [3000 x double], [3000 x double]* %49, i64 0, i64 %51
+  store double %46, double* %52, align 8
   br label %53
 
 ; <label>:53:                                     ; preds = %42
-  %54 = load i32, i32* %13, align 4
-  %55 = add nsw i32 %54, 1
-  store i32 %55, i32* %13, align 4
   %IndexSExt36 = sext i32 %3 to i64
   %IndexValMul37 = mul i64 %IndexSExt36, 38
   %IndexValAdd38 = add i64 %IndexValMul37, 31
-  %56 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd38
-  %OldBBCounter39 = load i64, i64* %56
+  %54 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd38
+  %OldBBCounter39 = load i64, i64* %54
   %NewBBCounter40 = add i64 %OldBBCounter39, 1
-  store i64 %NewBBCounter40, i64* %56
+  store i64 %NewBBCounter40, i64* %54
+  %55 = load i32, i32* %14, align 4
+  %56 = add nsw i32 %55, 1
+  store i32 %56, i32* %14, align 4
   br label %38
 
 ; <label>:57:                                     ; preds = %38
@@ -524,16 +524,16 @@ define internal void @.omp_outlined..1(i32* noalias, i32* noalias) #0 {
   br label %61
 
 ; <label>:61:                                     ; preds = %59
-  %62 = load i32, i32* %6, align 4
-  %63 = add nsw i32 %62, 1
-  store i32 %63, i32* %6, align 4
   %IndexSExt51 = sext i32 %3 to i64
   %IndexValMul52 = mul i64 %IndexSExt51, 38
   %IndexValAdd53 = add i64 %IndexValMul52, 34
-  %64 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd53
-  %OldBBCounter54 = load i64, i64* %64
+  %62 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd53
+  %OldBBCounter54 = load i64, i64* %62
   %NewBBCounter55 = add i64 %OldBBCounter54, 1
-  store i64 %NewBBCounter55, i64* %64
+  store i64 %NewBBCounter55, i64* %62
+  %63 = load i32, i32* %7, align 4
+  %64 = add nsw i32 %63, 1
+  store i32 %64, i32* %7, align 4
   br label %28
 
 ; <label>:65:                                     ; preds = %28
@@ -547,7 +547,6 @@ define internal void @.omp_outlined..1(i32* noalias, i32* noalias) #0 {
   br label %67
 
 ; <label>:67:                                     ; preds = %65
-  call void @__kmpc_for_static_fini(%ident_t* @1, i32 %15)
   %IndexSExt61 = sext i32 %3 to i64
   %IndexValMul62 = mul i64 %IndexSExt61, 38
   %IndexValAdd63 = add i64 %IndexValMul62, 36
@@ -555,33 +554,34 @@ define internal void @.omp_outlined..1(i32* noalias, i32* noalias) #0 {
   %OldBBCounter64 = load i64, i64* %68
   %NewBBCounter65 = add i64 %OldBBCounter64, 1
   store i64 %NewBBCounter65, i64* %68
+  call void @__kmpc_for_static_fini(%ident_t* @1, i32 %16)
   ret void
 }
 
 ; Function Attrs: noinline nounwind optnone uwtable
 define i32 @main() #0 {
   %1 = call i32 @sched_getcpu()
-  %2 = alloca i32, align 4
-  %3 = alloca double, align 8
-  %4 = alloca double, align 8
-  store i32 0, i32* %2, align 4
-  %5 = call double @omp_get_wtime()
-  store double %5, double* %3, align 8
-  call void @matrixInit()
-  call void @matrixMulti()
-  %6 = call double @omp_get_wtime()
-  store double %6, double* %4, align 8
-  %7 = load double, double* %4, align 8
-  %8 = load double, double* %3, align 8
-  %9 = fsub double %7, %8
-  %10 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([11 x i8], [11 x i8]* @.str.2, i32 0, i32 0), double %9)
   %IndexSExt = sext i32 %1 to i64
   %IndexValMul = mul i64 %IndexSExt, 38
   %IndexValAdd = add i64 %IndexValMul, 37
-  %11 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
-  %OldBBCounter = load i64, i64* %11
+  %2 = getelementptr [2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
+  %OldBBCounter = load i64, i64* %2
   %NewBBCounter = add i64 %OldBBCounter, 1
-  store i64 %NewBBCounter, i64* %11
+  store i64 %NewBBCounter, i64* %2
+  %3 = alloca i32, align 4
+  %4 = alloca double, align 8
+  %5 = alloca double, align 8
+  store i32 0, i32* %3, align 4
+  %6 = call double @omp_get_wtime()
+  store double %6, double* %4, align 8
+  call void @matrixInit()
+  call void @matrixMulti()
+  %7 = call double @omp_get_wtime()
+  store double %7, double* %5, align 8
+  %8 = load double, double* %5, align 8
+  %9 = load double, double* %4, align 8
+  %10 = fsub double %8, %9
+  %11 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([11 x i8], [11 x i8]* @.str.2, i32 0, i32 0), double %10)
   call void @_Z18WriteOpenMPProfilePll(i64* getelementptr inbounds ([2736 x i64], [2736 x i64]* @BBCounters, i64 0, i64 0), i64 2736)
   ret i32 0
 }

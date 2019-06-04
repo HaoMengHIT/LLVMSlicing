@@ -1,0 +1,135 @@
+\chapter{Conclusion}
+\label{conc}
+
+\section{Discussion of Results}
+\label{discres}
+There are several potential reasons for the underwhelming results for the Parallel-J solutions given in Section \ref{res}. 
+Probably the most significant reason for these results is that the body of code being parallelized (see Appendix \ref{apjverb}) 
+potentially creates a large number of permanent and temporary objects, 
+meaning that there are multiple requests for memory from the Java run-time heap. 
+For example, since this work was originally intended to be a parallel implementation of J, 
+several wrapper classes for were created to hold the same kind of information the current version of J\cite{ioj} 
+maintains about arrays and the primitive values, like reference counts and bit flags for type information, 
+and so where in a normal Scala library there would have been operations on primitive values, 
+in Parallel-J these operations were encumbered by having to work on instances of wrapper classes. 
+The constant creation of new objects for every single integer likely lengthened program run-time significantly.
+
+Also, operations that took existing collections and turned them into collections of higher rank 
+were implemented by copying whole collections, operating on them, 
+then concatenating each sub-result to return the final result. 
+This constant copying of sub-arrays could have been avoided through the use of \textit{index transformations} 
+which have been described in Section \ref{repa}, potentially improving performance significantly 
+by removing these unnecessary operations.
+ 
+Additionally, the large number of wrapper classes for primitive values 
+increased each Parallel-J solution's memory requirements such that even comparatively modest problem sizes
+would not fit in cache, degrading performance significantly. 
+This was first discovered when analyzing the performance results in Section \ref{respi}, 
+in which increasing the problem size by a factor of 10, from $10,000$ to $100,000$, 
+caused the program's run time to increase by a factor of 100. 
+The solutions in C with OpenMP, in contrast, did not display this behavior, 
+and instead only began showing significant improvements from parallelism in the same problem 
+at a problem sizes of $1,000,000$.
+
+Finally, this research did not make use of the macros introduced by Scala 2.10\cite{scala210} 
+because Scala 2.10 was released too late in the research's development to be incorporated.
+These macros have the potential to improve performance 
+by replacing at compile time source code expressions that appear to be acting on objects 
+with lower-level expressions acting on primitives, thus avoiding new object creation.
+
+\section{Future Research}
+\subsection{Parallel Implementation of J}
+This research would be useful for future work towards a parallel alternative of J.
+Regardless of the language chosen for implementing a parallel J, 
+researchers must still consider which language features to include first in their prototype (Section \ref{desp})
+and must still understand the inherently data parallel nature of the rank operator (Section \ref{fridp})
+Also, the forces that lead to the choice of Scala as the language 
+for this research (also listed in Section \ref{desp}), 
+should suggest to future researchers the kinds of language features desirable 
+for implementing a parallel J. 
+If future work is done in this area in Scala 
+or another language with suitable programming paradigms and libraries 
+for developing a parallel implementation of J, 
+then this research should be used as a prototype 
+to help guide development.
+
+Alternatively, a future parallel implementation of J
+could be done in the C programming language, based on the current implementation of J\cite{ioj}. 
+In order to begin this approach, 
+it is strongly recommended that researchers first 
+familiarize themselves with Roger Hui's documentation, ``An Implementation of J.''
+Both this documentation and the full source code (under open sources licenses)
+are available freely on the J Programming web site\cite{jweb}.
+In addition, it seems that there are at least two viable options in such an approach 
+which are possibly not mutually exclusive.
+One option is to use a shared memory parallel environment such
+OpenMP to parallelize operations within a single instance of a
+parallel J. 
+Another is to take advantage of the fact that the
+current implementation of J already includes functionality to allow
+for multiple instances of J to be running in the same process without
+race conditions and approach future work using a distributed memory
+parallel environment, such as MPI\cite{mpi}.
+
+\subsection{Sequential and Parallel Scala Libraries for Regular Arrays using Function Rank}
+Another possible extension to the work presented here 
+is the development of a Scala library for arbitrary dimensional collections that uses function rank. 
+This library would ideally support parallelism in much the same way 
+Scala's current collections library does\cite{pc},
+through conversions between sequential and parallel implementations of each collection type. 
+However, it should be clear that even 
+a purely sequential version of such a library would be useful 
+for solving problems which requires operations on several different dimensions, 
+or which are naturally expressed in a higher dimension than the original problem description.
+
+At the time this research was conducted, 
+the author was not aware of current work being done in 
+generic and polytipic programming in Scala by Miles Sabin. 
+In particular this work, which is collectively called ``Shapeless''\cite{shapeless}, 
+supports collections whose sizes are known statically. 
+This functionality would be useful for future work in developing 
+a library of collections whose dimensions are known statically, 
+possibly granting some or all of the advantages give when discussing 
+the Haskell library \textit{Repa} in Section \ref{repa}\cite{dph}.
+Combining these advantages with functions supporting function rank into a single Scala library
+would lead to significant expressiveness and reduced boiler-plate code, 
+and could lend itself to a future parallel implementation for good performance, as well.
+
+\subsection{Implications for Other Work in Data Parallelism}
+This research touches other fields in computing, 
+such as type theory, language and library design, and parallel design patterns.
+Consequently, future developments in these fields will likely impact 
+future work building on this research, and vice versa. 
+For example, should a functional language emerge 
+with support for both numeric values in types and data parallelism, 
+then formalized function rank would give programmers not only 
+all the benefits of J and Parallel-J, 
+but would statically catch rank and shape errors. 
+Ideally, such a language provides formal function rank built-in, 
+but as a standard library, thus allowing programmers 
+to choose their own default function extensions (e.g. prefix and postfix agreement, see \cite{rankanduni}).
+
+There may also be equivalent models of formalized function rank 
+expressed in programming paradigms other than functional. 
+For example, Parallel-J leverages Scala's object-oriented features the most to implement function rank, 
+such as inheritance and encapsulation. 
+Though Parallel-J extends functions to collections of higher rank at run-time, 
+affecting performance and increasing the possible errors programmers must detect themselves, 
+its model of formalized function rank reduces boilerplate code and 
+potentially can increase performance through parallelism. 
+Programmers of object oriented languages should consider these benefits 
+when approaching data parallel problems.
+
+Finally, independent of language or paradigm, 
+the concept of extending functions by manipulating the rank on which they apply to their arguments 
+may itself be a proper parallel design pattern, 
+or at least a useful approach for problems in many design patterns.
+The formalized function rank found in J and in the Parallel-J Scala library 
+can help programmers exploit potential concurrency 
+because it allows programmers a take existing functions and, in an inherently data parallel fashion, 
+both apply them to specific ranks of a collection and 
+extend them to similar problems in higher dimensions. 
+Whatever the future holds in the field of parallel computing, 
+this paper hopes to make researchers aware that an elegant (and race-condition safe) solution 
+already exists to an entire class of data parallel problems 
+and is waiting for its time to be acknowledged as, and used in conjunction with, other great ideas in the field.
