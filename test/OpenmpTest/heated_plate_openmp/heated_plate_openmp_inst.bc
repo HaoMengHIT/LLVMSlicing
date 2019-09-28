@@ -1,0 +1,1843 @@
+; ModuleID = 'heated_plate_openmp_new.bc'
+source_filename = "llvm-link"
+target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-pc-linux-gnu"
+
+%ident_t = type { i32, i32, i32, i32, i8* }
+%struct._IO_FILE = type { i32, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, %struct._IO_marker*, %struct._IO_FILE*, i32, i32, i64, i16, i8, [1 x i8], i8*, i64, i8*, i8*, i8*, i8*, i64, i32, [20 x i8] }
+%struct._IO_marker = type { %struct._IO_marker*, %struct._IO_FILE*, i32 }
+
+@.gomp_critical_user_.reduction.var = common global [8 x i32] zeroinitializer
+@str = private unnamed_addr constant [20 x i8] c"HEATED_PLATE_OPENMP\00"
+@str.21 = private unnamed_addr constant [19 x i8] c"  C/OpenMP version\00"
+@str.22 = private unnamed_addr constant [67 x i8] c"  A program to solve for the steady state temperature distribution\00"
+@str.23 = private unnamed_addr constant [28 x i8] c"  over a rectangular plate.\00"
+@.str.5 = private unnamed_addr constant [36 x i8] c"  Spatial grid of %d by %d points.\0A\00", align 1
+@.str.6 = private unnamed_addr constant [60 x i8] c"  The iteration will be repeated until the change is <= %e\0A\00", align 1
+@.str.7 = private unnamed_addr constant [39 x i8] c"  Number of processors available = %d\0A\00", align 1
+@.str.8 = private unnamed_addr constant [39 x i8] c"  Number of threads =              %d\0A\00", align 1
+@0 = private unnamed_addr constant %ident_t { i32 0, i32 2, i32 0, i32 0, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.9, i32 0, i32 0) }, align 8
+@.str.11 = private unnamed_addr constant [13 x i8] c"  MEAN = %f\0A\00", align 1
+@str.24 = private unnamed_addr constant [19 x i8] c" Iteration  Change\00"
+@.str.16 = private unnamed_addr constant [11 x i8] c"  %8d  %f\0A\00", align 1
+@str.25 = private unnamed_addr constant [28 x i8] c"  Error tolerance achieved.\00"
+@.str.18 = private unnamed_addr constant [23 x i8] c"  Wallclock time = %f\0A\00", align 1
+@str.26 = private unnamed_addr constant [21 x i8] c"HEATED_PLATE_OPENMP:\00"
+@str.27 = private unnamed_addr constant [27 x i8] c"  Normal end of execution.\00"
+@1 = private unnamed_addr constant %ident_t { i32 0, i32 514, i32 0, i32 0, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.9, i32 0, i32 0) }, align 8
+@2 = private unnamed_addr constant %ident_t { i32 0, i32 66, i32 0, i32 0, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.9, i32 0, i32 0) }, align 8
+@.str.9 = private unnamed_addr constant [23 x i8] c";unknown;unknown;0;0;;\00", align 1
+@3 = private unnamed_addr constant %ident_t { i32 0, i32 18, i32 0, i32 0, i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.9, i32 0, i32 0) }, align 8
+@.str = private unnamed_addr constant [13 x i8] c"%s.%d.bbfout\00", align 1
+@.str.1 = private unnamed_addr constant [17 x i8] c"hello world  %s\0A\00", align 1
+@.str.2 = private unnamed_addr constant [2 x i8] c"w\00", align 1
+@.str.3 = private unnamed_addr constant [17 x i8] c"open file wrong\0A\00", align 1
+@.str.4 = private unnamed_addr constant [5 x i8] c"%ld\09\00", align 1
+@BBCounters = internal global [5976 x i64] zeroinitializer
+
+; Function Attrs: nounwind uwtable
+define i32 @main(i32, i8** nocapture readnone) local_unnamed_addr #0 {
+  %3 = call i32 @sched_getcpu()
+  %IndexSExt = sext i32 %3 to i64
+  %IndexValMul = mul i64 %IndexSExt, 83
+  %IndexValAdd = add i64 %IndexValMul, 0
+  %4 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
+  %OldBBCounter = load i64, i64* %4
+  %NewBBCounter = add i64 %OldBBCounter, 1
+  store i64 %NewBBCounter, i64* %4
+  %5 = alloca double, align 8
+  %6 = alloca [500 x [500 x double]], align 16
+  %7 = alloca [500 x [500 x double]], align 16
+  %8 = bitcast double* %5 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %8) #2
+  %9 = bitcast [500 x [500 x double]]* %6 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 2000000, i8* nonnull %9) #2
+  %10 = bitcast [500 x [500 x double]]* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 2000000, i8* nonnull %10) #2
+  %11 = tail call i32 @putchar(i32 10)
+  %12 = tail call i32 @puts(i8* getelementptr inbounds ([20 x i8], [20 x i8]* @str, i64 0, i64 0))
+  %13 = tail call i32 @puts(i8* getelementptr inbounds ([19 x i8], [19 x i8]* @str.21, i64 0, i64 0))
+  %14 = tail call i32 @puts(i8* getelementptr inbounds ([67 x i8], [67 x i8]* @str.22, i64 0, i64 0))
+  %15 = tail call i32 @puts(i8* getelementptr inbounds ([28 x i8], [28 x i8]* @str.23, i64 0, i64 0))
+  %16 = tail call i32 @putchar(i32 10)
+  %17 = tail call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([36 x i8], [36 x i8]* @.str.5, i64 0, i64 0), i32 500, i32 500)
+  %18 = tail call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([60 x i8], [60 x i8]* @.str.6, i64 0, i64 0), double 1.000000e-03)
+  %19 = tail call i32 @omp_get_num_procs() #2
+  %20 = tail call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([39 x i8], [39 x i8]* @.str.7, i64 0, i64 0), i32 %19)
+  %21 = tail call i32 @omp_get_max_threads() #2
+  %22 = tail call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([39 x i8], [39 x i8]* @.str.8, i64 0, i64 0), i32 %21)
+  store double 0.000000e+00, double* %5, align 8, !tbaa !2
+  call void (%ident_t*, i32, void (i32*, i32*, ...)*, ...) @__kmpc_fork_call(%ident_t* nonnull @0, i32 2, void (i32*, i32*, ...)* bitcast (void (i32*, i32*, [500 x [500 x double]]*, double*)* @.omp_outlined. to void (i32*, i32*, ...)*), [500 x [500 x double]]* nonnull %7, double* nonnull %5) #2
+  %23 = call i32 @sched_getcpu()
+  %IndexSExt1 = sext i32 %23 to i64
+  %IndexValMul2 = mul i64 %IndexSExt1, 83
+  %IndexValAdd3 = add i64 %IndexValMul2, 1
+  %24 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd3
+  %OldBBCounter4 = load i64, i64* %24
+  %NewBBCounter5 = add i64 %OldBBCounter4, 1
+  store i64 %NewBBCounter5, i64* %24
+  %25 = load double, double* %5, align 8, !tbaa !2
+  %26 = fdiv double %25, 1.996000e+03
+  store double %26, double* %5, align 8, !tbaa !2
+  %27 = call i32 @putchar(i32 10)
+  %28 = load double, double* %5, align 8, !tbaa !2
+  %29 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([13 x i8], [13 x i8]* @.str.11, i64 0, i64 0), double %28)
+  call void (%ident_t*, i32, void (i32*, i32*, ...)*, ...) @__kmpc_fork_call(%ident_t* nonnull @0, i32 2, void (i32*, i32*, ...)* bitcast (void (i32*, i32*, [500 x [500 x double]]*, double*)* @.omp_outlined..12 to void (i32*, i32*, ...)*), [500 x [500 x double]]* nonnull %7, double* nonnull %5) #2
+  %30 = call i32 @sched_getcpu()
+  %IndexSExt6 = sext i32 %30 to i64
+  %IndexValMul7 = mul i64 %IndexSExt6, 83
+  %IndexValAdd8 = add i64 %IndexValMul7, 2
+  %31 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd8
+  %OldBBCounter9 = load i64, i64* %31
+  %NewBBCounter10 = add i64 %OldBBCounter9, 1
+  store i64 %NewBBCounter10, i64* %31
+  %32 = call i32 @putchar(i32 10)
+  %33 = call i32 @puts(i8* getelementptr inbounds ([19 x i8], [19 x i8]* @str.24, i64 0, i64 0))
+  %34 = call i32 @putchar(i32 10)
+  %35 = call double @omp_get_wtime() #2
+  br label %36
+
+; <label>:36:                                     ; preds = %36, %2
+  %37 = phi i32 [ 0, %2 ], [ %43, %36 ]
+  %IndexSExt11 = sext i32 %30 to i64
+  %IndexValMul12 = mul i64 %IndexSExt11, 83
+  %IndexValAdd13 = add i64 %IndexValMul12, 3
+  %38 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd13
+  %OldBBCounter14 = load i64, i64* %38
+  %NewBBCounter15 = add i64 %OldBBCounter14, 1
+  store i64 %NewBBCounter15, i64* %38
+  call void (%ident_t*, i32, void (i32*, i32*, ...)*, ...) @__kmpc_fork_call(%ident_t* nonnull @0, i32 2, void (i32*, i32*, ...)* bitcast (void (i32*, i32*, [500 x [500 x double]]*, [500 x [500 x double]]*)* @.omp_outlined..14 to void (i32*, i32*, ...)*), [500 x [500 x double]]* nonnull %6, [500 x [500 x double]]* nonnull %7) #2
+  %39 = call i32 @sched_getcpu()
+  %IndexSExt16 = sext i32 %39 to i64
+  %IndexValMul17 = mul i64 %IndexSExt16, 83
+  %IndexValAdd18 = add i64 %IndexValMul17, 4
+  %40 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd18
+  %OldBBCounter19 = load i64, i64* %40
+  %NewBBCounter20 = add i64 %OldBBCounter19, 1
+  store i64 %NewBBCounter20, i64* %40
+  call void (%ident_t*, i32, void (i32*, i32*, ...)*, ...) @__kmpc_fork_call(%ident_t* nonnull @0, i32 2, void (i32*, i32*, ...)* bitcast (void (i32*, i32*, [500 x [500 x double]]*, [500 x [500 x double]]*)* @.omp_outlined..15 to void (i32*, i32*, ...)*), [500 x [500 x double]]* nonnull %7, [500 x [500 x double]]* nonnull %6) #2
+  %41 = call i32 @sched_getcpu()
+  %IndexSExt21 = sext i32 %41 to i64
+  %IndexValMul22 = mul i64 %IndexSExt21, 83
+  %IndexValAdd23 = add i64 %IndexValMul22, 5
+  %42 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd23
+  %OldBBCounter24 = load i64, i64* %42
+  %NewBBCounter25 = add i64 %OldBBCounter24, 1
+  store i64 %NewBBCounter25, i64* %42
+  %43 = add nuw nsw i32 %37, 1
+  %44 = icmp eq i32 %43, 100001
+  br i1 %44, label %45, label %36
+
+; <label>:45:                                     ; preds = %36
+  %IndexSExt26 = sext i32 %41 to i64
+  %IndexValMul27 = mul i64 %IndexSExt26, 83
+  %IndexValAdd28 = add i64 %IndexValMul27, 6
+  %46 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd28
+  %OldBBCounter29 = load i64, i64* %46
+  %NewBBCounter30 = add i64 %OldBBCounter29, 1
+  store i64 %NewBBCounter30, i64* %46
+  %47 = call double @omp_get_wtime() #2
+  %48 = fsub double %47, %35
+  %49 = call i32 @putchar(i32 10)
+  %50 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([11 x i8], [11 x i8]* @.str.16, i64 0, i64 0), i32 100001, double 0.000000e+00)
+  %51 = call i32 @putchar(i32 10)
+  %52 = call i32 @puts(i8* getelementptr inbounds ([28 x i8], [28 x i8]* @str.25, i64 0, i64 0))
+  %53 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str.18, i64 0, i64 0), double %48)
+  %54 = call i32 @putchar(i32 10)
+  %55 = call i32 @puts(i8* getelementptr inbounds ([21 x i8], [21 x i8]* @str.26, i64 0, i64 0))
+  %56 = call i32 @puts(i8* getelementptr inbounds ([27 x i8], [27 x i8]* @str.27, i64 0, i64 0))
+  call void @llvm.lifetime.end.p0i8(i64 2000000, i8* nonnull %10) #2
+  call void @llvm.lifetime.end.p0i8(i64 2000000, i8* nonnull %9) #2
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %8) #2
+  call void @_Z18WriteOpenMPProfilePll(i64* getelementptr inbounds ([5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 0), i64 5976)
+  ret i32 0
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.start.p0i8(i64, i8* nocapture) #1
+
+; Function Attrs: nounwind
+declare i32 @putchar(i32) local_unnamed_addr #2
+
+; Function Attrs: nounwind
+declare i32 @puts(i8* nocapture readonly) local_unnamed_addr #2
+
+; Function Attrs: nounwind
+declare i32 @printf(i8* nocapture readonly, ...) #3
+
+declare i32 @omp_get_num_procs() local_unnamed_addr #4
+
+declare i32 @omp_get_max_threads() local_unnamed_addr #4
+
+; Function Attrs: nounwind uwtable
+define internal void @.omp_outlined.(i32* noalias nocapture readonly, i32* noalias nocapture readnone, [500 x [500 x double]]* nocapture dereferenceable(2000000), double* nocapture dereferenceable(8)) #0 {
+  %5 = call i32 @sched_getcpu()
+  %IndexSExt = sext i32 %5 to i64
+  %IndexValMul = mul i64 %IndexSExt, 83
+  %IndexValAdd = add i64 %IndexValMul, 7
+  %6 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
+  %OldBBCounter = load i64, i64* %6
+  %NewBBCounter = add i64 %OldBBCounter, 1
+  store i64 %NewBBCounter, i64* %6
+  %7 = alloca i32, align 4
+  %8 = alloca i32, align 4
+  %9 = alloca i32, align 4
+  %10 = alloca i32, align 4
+  %11 = alloca i32, align 4
+  %12 = alloca i32, align 4
+  %13 = alloca i32, align 4
+  %14 = alloca i32, align 4
+  %15 = alloca i32, align 4
+  %16 = alloca i32, align 4
+  %17 = alloca i32, align 4
+  %18 = alloca i32, align 4
+  %19 = alloca i32, align 4
+  %20 = alloca i32, align 4
+  %21 = alloca i32, align 4
+  %22 = alloca i32, align 4
+  %23 = alloca i32, align 4
+  %24 = alloca i32, align 4
+  %25 = alloca i32, align 4
+  %26 = alloca i32, align 4
+  %27 = alloca double, align 8
+  %28 = alloca [1 x i8*], align 8
+  %29 = alloca i32, align 4
+  %30 = alloca i32, align 4
+  %31 = alloca i32, align 4
+  %32 = alloca i32, align 4
+  %33 = alloca double, align 8
+  %34 = alloca [1 x i8*], align 8
+  %35 = bitcast i32* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %35) #2
+  store i32 0, i32* %7, align 4, !tbaa !6
+  %36 = bitcast i32* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %36) #2
+  store i32 497, i32* %8, align 4, !tbaa !6
+  %37 = bitcast i32* %9 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %37) #2
+  store i32 1, i32* %9, align 4, !tbaa !6
+  %38 = bitcast i32* %10 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %38) #2
+  store i32 0, i32* %10, align 4, !tbaa !6
+  %39 = load i32, i32* %0, align 4, !tbaa !6
+  call void @__kmpc_for_static_init_4(%ident_t* nonnull @1, i32 %39, i32 34, i32* nonnull %10, i32* nonnull %7, i32* nonnull %8, i32* nonnull %9, i32 1, i32 1) #2
+  %40 = load i32, i32* %8, align 4, !tbaa !6
+  %41 = icmp slt i32 %40, 497
+  %42 = select i1 %41, i32 %40, i32 497
+  store i32 %42, i32* %8, align 4, !tbaa !6
+  %43 = load i32, i32* %7, align 4, !tbaa !6
+  %44 = icmp sgt i32 %43, %42
+  br i1 %44, label %55, label %45
+
+; <label>:45:                                     ; preds = %4
+  %IndexSExt1 = sext i32 %5 to i64
+  %IndexValMul2 = mul i64 %IndexSExt1, 83
+  %IndexValAdd3 = add i64 %IndexValMul2, 8
+  %46 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd3
+  %OldBBCounter4 = load i64, i64* %46
+  %NewBBCounter5 = add i64 %OldBBCounter4, 1
+  store i64 %NewBBCounter5, i64* %46
+  %47 = sext i32 %43 to i64
+  %48 = sext i32 %42 to i64
+  br label %49
+
+; <label>:49:                                     ; preds = %49, %45
+  %50 = phi i64 [ %52, %49 ], [ %47, %45 ]
+  %IndexSExt6 = sext i32 %5 to i64
+  %IndexValMul7 = mul i64 %IndexSExt6, 83
+  %IndexValAdd8 = add i64 %IndexValMul7, 9
+  %51 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd8
+  %OldBBCounter9 = load i64, i64* %51
+  %NewBBCounter10 = add i64 %OldBBCounter9, 1
+  store i64 %NewBBCounter10, i64* %51
+  %52 = add nsw i64 %50, 1
+  %53 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %52, i64 0
+  store double 1.000000e+02, double* %53, align 16, !tbaa !2
+  %54 = icmp slt i64 %50, %48
+  br i1 %54, label %49, label %55
+
+; <label>:55:                                     ; preds = %49, %4
+  %IndexSExt11 = sext i32 %5 to i64
+  %IndexValMul12 = mul i64 %IndexSExt11, 83
+  %IndexValAdd13 = add i64 %IndexValMul12, 10
+  %56 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd13
+  %OldBBCounter14 = load i64, i64* %56
+  %NewBBCounter15 = add i64 %OldBBCounter14, 1
+  store i64 %NewBBCounter15, i64* %56
+  call void @__kmpc_for_static_fini(%ident_t* nonnull @1, i32 %39) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %38) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %37) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %36) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %35) #2
+  call void @__kmpc_barrier(%ident_t* nonnull @2, i32 %39) #2
+  %57 = bitcast i32* %11 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %57) #2
+  store i32 0, i32* %11, align 4, !tbaa !6
+  %58 = bitcast i32* %12 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %58) #2
+  store i32 497, i32* %12, align 4, !tbaa !6
+  %59 = bitcast i32* %13 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %59) #2
+  store i32 1, i32* %13, align 4, !tbaa !6
+  %60 = bitcast i32* %14 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %60) #2
+  store i32 0, i32* %14, align 4, !tbaa !6
+  call void @__kmpc_for_static_init_4(%ident_t* nonnull @1, i32 %39, i32 34, i32* nonnull %14, i32* nonnull %11, i32* nonnull %12, i32* nonnull %13, i32 1, i32 1) #2
+  %61 = load i32, i32* %12, align 4, !tbaa !6
+  %62 = icmp slt i32 %61, 497
+  %63 = select i1 %62, i32 %61, i32 497
+  store i32 %63, i32* %12, align 4, !tbaa !6
+  %64 = load i32, i32* %11, align 4, !tbaa !6
+  %65 = icmp sgt i32 %64, %63
+  br i1 %65, label %76, label %66
+
+; <label>:66:                                     ; preds = %55
+  %IndexSExt16 = sext i32 %5 to i64
+  %IndexValMul17 = mul i64 %IndexSExt16, 83
+  %IndexValAdd18 = add i64 %IndexValMul17, 11
+  %67 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd18
+  %OldBBCounter19 = load i64, i64* %67
+  %NewBBCounter20 = add i64 %OldBBCounter19, 1
+  store i64 %NewBBCounter20, i64* %67
+  %68 = sext i32 %64 to i64
+  %69 = sext i32 %63 to i64
+  br label %70
+
+; <label>:70:                                     ; preds = %70, %66
+  %71 = phi i64 [ %73, %70 ], [ %68, %66 ]
+  %IndexSExt21 = sext i32 %5 to i64
+  %IndexValMul22 = mul i64 %IndexSExt21, 83
+  %IndexValAdd23 = add i64 %IndexValMul22, 12
+  %72 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd23
+  %OldBBCounter24 = load i64, i64* %72
+  %NewBBCounter25 = add i64 %OldBBCounter24, 1
+  store i64 %NewBBCounter25, i64* %72
+  %73 = add nsw i64 %71, 1
+  %74 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %73, i64 499
+  store double 1.000000e+02, double* %74, align 8, !tbaa !2
+  %75 = icmp slt i64 %71, %69
+  br i1 %75, label %70, label %76
+
+; <label>:76:                                     ; preds = %70, %55
+  %IndexSExt26 = sext i32 %5 to i64
+  %IndexValMul27 = mul i64 %IndexSExt26, 83
+  %IndexValAdd28 = add i64 %IndexValMul27, 13
+  %77 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd28
+  %OldBBCounter29 = load i64, i64* %77
+  %NewBBCounter30 = add i64 %OldBBCounter29, 1
+  store i64 %NewBBCounter30, i64* %77
+  call void @__kmpc_for_static_fini(%ident_t* nonnull @1, i32 %39) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %60) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %59) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %58) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %57) #2
+  call void @__kmpc_barrier(%ident_t* nonnull @2, i32 %39) #2
+  %78 = bitcast i32* %15 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %78) #2
+  store i32 0, i32* %15, align 4, !tbaa !6
+  %79 = bitcast i32* %16 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %79) #2
+  store i32 499, i32* %16, align 4, !tbaa !6
+  %80 = bitcast i32* %17 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %80) #2
+  store i32 1, i32* %17, align 4, !tbaa !6
+  %81 = bitcast i32* %18 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %81) #2
+  store i32 0, i32* %18, align 4, !tbaa !6
+  call void @__kmpc_for_static_init_4(%ident_t* nonnull @1, i32 %39, i32 34, i32* nonnull %18, i32* nonnull %15, i32* nonnull %16, i32* nonnull %17, i32 1, i32 1) #2
+  %82 = load i32, i32* %16, align 4, !tbaa !6
+  %83 = icmp slt i32 %82, 499
+  %84 = select i1 %83, i32 %82, i32 499
+  store i32 %84, i32* %16, align 4, !tbaa !6
+  %85 = load i32, i32* %15, align 4, !tbaa !6
+  %86 = icmp sgt i32 %85, %84
+  br i1 %86, label %168, label %87
+
+; <label>:87:                                     ; preds = %76
+  %IndexSExt31 = sext i32 %5 to i64
+  %IndexValMul32 = mul i64 %IndexSExt31, 83
+  %IndexValAdd33 = add i64 %IndexValMul32, 14
+  %88 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd33
+  %OldBBCounter34 = load i64, i64* %88
+  %NewBBCounter35 = add i64 %OldBBCounter34, 1
+  store i64 %NewBBCounter35, i64* %88
+  %89 = sext i32 %85 to i64
+  %90 = sext i32 %84 to i64
+  %91 = icmp sgt i64 %90, %89
+  %92 = select i1 %91, i64 %90, i64 %89
+  %93 = add nsw i64 %92, 1
+  %94 = sub nsw i64 %93, %89
+  %95 = icmp ult i64 %94, 4
+  br i1 %95, label %159, label %96
+
+; <label>:96:                                     ; preds = %87
+  %IndexSExt36 = sext i32 %5 to i64
+  %IndexValMul37 = mul i64 %IndexSExt36, 83
+  %IndexValAdd38 = add i64 %IndexValMul37, 15
+  %97 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd38
+  %OldBBCounter39 = load i64, i64* %97
+  %NewBBCounter40 = add i64 %OldBBCounter39, 1
+  store i64 %NewBBCounter40, i64* %97
+  %98 = and i64 %94, -4
+  %99 = add nsw i64 %98, %89
+  %100 = add nsw i64 %98, -4
+  %101 = lshr exact i64 %100, 2
+  %102 = add nuw nsw i64 %101, 1
+  %103 = and i64 %102, 3
+  %104 = icmp ult i64 %100, 12
+  br i1 %104, label %138, label %105
+
+; <label>:105:                                    ; preds = %96
+  %IndexSExt41 = sext i32 %5 to i64
+  %IndexValMul42 = mul i64 %IndexSExt41, 83
+  %IndexValAdd43 = add i64 %IndexValMul42, 16
+  %106 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd43
+  %OldBBCounter44 = load i64, i64* %106
+  %NewBBCounter45 = add i64 %OldBBCounter44, 1
+  store i64 %NewBBCounter45, i64* %106
+  %107 = sub nsw i64 %102, %103
+  br label %108
+
+; <label>:108:                                    ; preds = %108, %105
+  %109 = phi i64 [ 0, %105 ], [ %135, %108 ]
+  %110 = phi i64 [ %107, %105 ], [ %136, %108 ]
+  %IndexSExt46 = sext i32 %5 to i64
+  %IndexValMul47 = mul i64 %IndexSExt46, 83
+  %IndexValAdd48 = add i64 %IndexValMul47, 17
+  %111 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd48
+  %OldBBCounter49 = load i64, i64* %111
+  %NewBBCounter50 = add i64 %OldBBCounter49, 1
+  store i64 %NewBBCounter50, i64* %111
+  %112 = add i64 %109, %89
+  %113 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 499, i64 %112
+  %114 = bitcast double* %113 to <2 x double>*
+  store <2 x double> <double 1.000000e+02, double 1.000000e+02>, <2 x double>* %114, align 8, !tbaa !2
+  %115 = getelementptr double, double* %113, i64 2
+  %116 = bitcast double* %115 to <2 x double>*
+  store <2 x double> <double 1.000000e+02, double 1.000000e+02>, <2 x double>* %116, align 8, !tbaa !2
+  %117 = or i64 %109, 4
+  %118 = add i64 %117, %89
+  %119 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 499, i64 %118
+  %120 = bitcast double* %119 to <2 x double>*
+  store <2 x double> <double 1.000000e+02, double 1.000000e+02>, <2 x double>* %120, align 8, !tbaa !2
+  %121 = getelementptr double, double* %119, i64 2
+  %122 = bitcast double* %121 to <2 x double>*
+  store <2 x double> <double 1.000000e+02, double 1.000000e+02>, <2 x double>* %122, align 8, !tbaa !2
+  %123 = or i64 %109, 8
+  %124 = add i64 %123, %89
+  %125 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 499, i64 %124
+  %126 = bitcast double* %125 to <2 x double>*
+  store <2 x double> <double 1.000000e+02, double 1.000000e+02>, <2 x double>* %126, align 8, !tbaa !2
+  %127 = getelementptr double, double* %125, i64 2
+  %128 = bitcast double* %127 to <2 x double>*
+  store <2 x double> <double 1.000000e+02, double 1.000000e+02>, <2 x double>* %128, align 8, !tbaa !2
+  %129 = or i64 %109, 12
+  %130 = add i64 %129, %89
+  %131 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 499, i64 %130
+  %132 = bitcast double* %131 to <2 x double>*
+  store <2 x double> <double 1.000000e+02, double 1.000000e+02>, <2 x double>* %132, align 8, !tbaa !2
+  %133 = getelementptr double, double* %131, i64 2
+  %134 = bitcast double* %133 to <2 x double>*
+  store <2 x double> <double 1.000000e+02, double 1.000000e+02>, <2 x double>* %134, align 8, !tbaa !2
+  %135 = add i64 %109, 16
+  %136 = add i64 %110, -4
+  %137 = icmp eq i64 %136, 0
+  br i1 %137, label %138, label %108, !llvm.loop !8
+
+; <label>:138:                                    ; preds = %108, %96
+  %139 = phi i64 [ 0, %96 ], [ %135, %108 ]
+  %IndexSExt51 = sext i32 %5 to i64
+  %IndexValMul52 = mul i64 %IndexSExt51, 83
+  %IndexValAdd53 = add i64 %IndexValMul52, 18
+  %140 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd53
+  %OldBBCounter54 = load i64, i64* %140
+  %NewBBCounter55 = add i64 %OldBBCounter54, 1
+  store i64 %NewBBCounter55, i64* %140
+  %141 = icmp eq i64 %103, 0
+  br i1 %141, label %156, label %142
+
+; <label>:142:                                    ; preds = %138
+  %IndexSExt56 = sext i32 %5 to i64
+  %IndexValMul57 = mul i64 %IndexSExt56, 83
+  %IndexValAdd58 = add i64 %IndexValMul57, 19
+  %143 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd58
+  %OldBBCounter59 = load i64, i64* %143
+  %NewBBCounter60 = add i64 %OldBBCounter59, 1
+  store i64 %NewBBCounter60, i64* %143
+  br label %144
+
+; <label>:144:                                    ; preds = %144, %142
+  %145 = phi i64 [ %139, %142 ], [ %153, %144 ]
+  %146 = phi i64 [ %103, %142 ], [ %154, %144 ]
+  %IndexSExt61 = sext i32 %5 to i64
+  %IndexValMul62 = mul i64 %IndexSExt61, 83
+  %IndexValAdd63 = add i64 %IndexValMul62, 20
+  %147 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd63
+  %OldBBCounter64 = load i64, i64* %147
+  %NewBBCounter65 = add i64 %OldBBCounter64, 1
+  store i64 %NewBBCounter65, i64* %147
+  %148 = add i64 %145, %89
+  %149 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 499, i64 %148
+  %150 = bitcast double* %149 to <2 x double>*
+  store <2 x double> <double 1.000000e+02, double 1.000000e+02>, <2 x double>* %150, align 8, !tbaa !2
+  %151 = getelementptr double, double* %149, i64 2
+  %152 = bitcast double* %151 to <2 x double>*
+  store <2 x double> <double 1.000000e+02, double 1.000000e+02>, <2 x double>* %152, align 8, !tbaa !2
+  %153 = add i64 %145, 4
+  %154 = add i64 %146, -1
+  %155 = icmp eq i64 %154, 0
+  br i1 %155, label %156, label %144, !llvm.loop !10
+
+; <label>:156:                                    ; preds = %144, %138
+  %IndexSExt66 = sext i32 %5 to i64
+  %IndexValMul67 = mul i64 %IndexSExt66, 83
+  %IndexValAdd68 = add i64 %IndexValMul67, 21
+  %157 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd68
+  %OldBBCounter69 = load i64, i64* %157
+  %NewBBCounter70 = add i64 %OldBBCounter69, 1
+  store i64 %NewBBCounter70, i64* %157
+  %158 = icmp eq i64 %94, %98
+  br i1 %158, label %168, label %159
+
+; <label>:159:                                    ; preds = %156, %87
+  %160 = phi i64 [ %89, %87 ], [ %99, %156 ]
+  %IndexSExt71 = sext i32 %5 to i64
+  %IndexValMul72 = mul i64 %IndexSExt71, 83
+  %IndexValAdd73 = add i64 %IndexValMul72, 22
+  %161 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd73
+  %OldBBCounter74 = load i64, i64* %161
+  %NewBBCounter75 = add i64 %OldBBCounter74, 1
+  store i64 %NewBBCounter75, i64* %161
+  br label %162
+
+; <label>:162:                                    ; preds = %159, %162
+  %163 = phi i64 [ %166, %162 ], [ %160, %159 ]
+  %IndexSExt76 = sext i32 %5 to i64
+  %IndexValMul77 = mul i64 %IndexSExt76, 83
+  %IndexValAdd78 = add i64 %IndexValMul77, 23
+  %164 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd78
+  %OldBBCounter79 = load i64, i64* %164
+  %NewBBCounter80 = add i64 %OldBBCounter79, 1
+  store i64 %NewBBCounter80, i64* %164
+  %165 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 499, i64 %163
+  store double 1.000000e+02, double* %165, align 8, !tbaa !2
+  %166 = add nsw i64 %163, 1
+  %167 = icmp slt i64 %163, %90
+  br i1 %167, label %162, label %168, !llvm.loop !12
+
+; <label>:168:                                    ; preds = %162, %156, %76
+  %IndexSExt81 = sext i32 %5 to i64
+  %IndexValMul82 = mul i64 %IndexSExt81, 83
+  %IndexValAdd83 = add i64 %IndexValMul82, 24
+  %169 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd83
+  %OldBBCounter84 = load i64, i64* %169
+  %NewBBCounter85 = add i64 %OldBBCounter84, 1
+  store i64 %NewBBCounter85, i64* %169
+  call void @__kmpc_for_static_fini(%ident_t* nonnull @1, i32 %39) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %81) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %80) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %79) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %78) #2
+  call void @__kmpc_barrier(%ident_t* nonnull @2, i32 %39) #2
+  %170 = bitcast i32* %19 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %170) #2
+  store i32 0, i32* %19, align 4, !tbaa !6
+  %171 = bitcast i32* %20 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %171) #2
+  store i32 499, i32* %20, align 4, !tbaa !6
+  %172 = bitcast i32* %21 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %172) #2
+  store i32 1, i32* %21, align 4, !tbaa !6
+  %173 = bitcast i32* %22 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %173) #2
+  store i32 0, i32* %22, align 4, !tbaa !6
+  call void @__kmpc_for_static_init_4(%ident_t* nonnull @1, i32 %39, i32 34, i32* nonnull %22, i32* nonnull %19, i32* nonnull %20, i32* nonnull %21, i32 1, i32 1) #2
+  %174 = load i32, i32* %20, align 4, !tbaa !6
+  %175 = icmp slt i32 %174, 499
+  %176 = select i1 %175, i32 %174, i32 499
+  store i32 %176, i32* %20, align 4, !tbaa !6
+  %177 = load i32, i32* %19, align 4, !tbaa !6
+  %178 = icmp slt i32 %176, %177
+  br i1 %178, label %188, label %179
+
+; <label>:179:                                    ; preds = %168
+  %IndexSExt86 = sext i32 %5 to i64
+  %IndexValMul87 = mul i64 %IndexSExt86, 83
+  %IndexValAdd88 = add i64 %IndexValMul87, 25
+  %180 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd88
+  %OldBBCounter89 = load i64, i64* %180
+  %NewBBCounter90 = add i64 %OldBBCounter89, 1
+  store i64 %NewBBCounter90, i64* %180
+  %181 = sext i32 %177 to i64
+  %182 = getelementptr [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 0, i64 %181
+  %183 = bitcast double* %182 to i8*
+  %184 = sub i32 %176, %177
+  %185 = zext i32 %184 to i64
+  %186 = shl nuw nsw i64 %185, 3
+  %187 = add nuw nsw i64 %186, 8
+  call void @llvm.memset.p0i8.i64(i8* %183, i8 0, i64 %187, i32 8, i1 false)
+  br label %188
+
+; <label>:188:                                    ; preds = %179, %168
+  %IndexSExt91 = sext i32 %5 to i64
+  %IndexValMul92 = mul i64 %IndexSExt91, 83
+  %IndexValAdd93 = add i64 %IndexValMul92, 26
+  %189 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd93
+  %OldBBCounter94 = load i64, i64* %189
+  %NewBBCounter95 = add i64 %OldBBCounter94, 1
+  store i64 %NewBBCounter95, i64* %189
+  call void @__kmpc_for_static_fini(%ident_t* nonnull @1, i32 %39) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %173) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %172) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %171) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %170) #2
+  call void @__kmpc_barrier(%ident_t* nonnull @2, i32 %39) #2
+  %190 = bitcast i32* %23 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %190) #2
+  store i32 0, i32* %23, align 4, !tbaa !6
+  %191 = bitcast i32* %24 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %191) #2
+  store i32 497, i32* %24, align 4, !tbaa !6
+  %192 = bitcast i32* %25 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %192) #2
+  store i32 1, i32* %25, align 4, !tbaa !6
+  %193 = bitcast i32* %26 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %193) #2
+  store i32 0, i32* %26, align 4, !tbaa !6
+  %194 = bitcast double* %27 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %194) #2
+  store double 0.000000e+00, double* %27, align 8, !tbaa !2
+  call void @__kmpc_for_static_init_4(%ident_t* nonnull @1, i32 %39, i32 34, i32* nonnull %26, i32* nonnull %23, i32* nonnull %24, i32* nonnull %25, i32 1, i32 1) #2
+  %195 = load i32, i32* %24, align 4, !tbaa !6
+  %196 = icmp slt i32 %195, 497
+  %197 = select i1 %196, i32 %195, i32 497
+  store i32 %197, i32* %24, align 4, !tbaa !6
+  %198 = load i32, i32* %23, align 4, !tbaa !6
+  %199 = icmp sgt i32 %198, %197
+  br i1 %199, label %218, label %200
+
+; <label>:200:                                    ; preds = %188
+  %IndexSExt96 = sext i32 %5 to i64
+  %IndexValMul97 = mul i64 %IndexSExt96, 83
+  %IndexValAdd98 = add i64 %IndexValMul97, 27
+  %201 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd98
+  %OldBBCounter99 = load i64, i64* %201
+  %NewBBCounter100 = add i64 %OldBBCounter99, 1
+  store i64 %NewBBCounter100, i64* %201
+  %202 = sext i32 %198 to i64
+  %203 = sext i32 %197 to i64
+  br label %204
+
+; <label>:204:                                    ; preds = %204, %200
+  %205 = phi i64 [ %208, %204 ], [ %202, %200 ]
+  %206 = phi double [ %214, %204 ], [ 0.000000e+00, %200 ]
+  %IndexSExt101 = sext i32 %5 to i64
+  %IndexValMul102 = mul i64 %IndexSExt101, 83
+  %IndexValAdd103 = add i64 %IndexValMul102, 28
+  %207 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd103
+  %OldBBCounter104 = load i64, i64* %207
+  %NewBBCounter105 = add i64 %OldBBCounter104, 1
+  store i64 %NewBBCounter105, i64* %207
+  %208 = add nsw i64 %205, 1
+  %209 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %208, i64 0
+  %210 = load double, double* %209, align 16, !tbaa !2
+  %211 = fadd double %206, %210
+  %212 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %208, i64 499
+  %213 = load double, double* %212, align 8, !tbaa !2
+  %214 = fadd double %211, %213
+  %215 = icmp slt i64 %205, %203
+  br i1 %215, label %204, label %216
+
+; <label>:216:                                    ; preds = %204
+  %IndexSExt106 = sext i32 %5 to i64
+  %IndexValMul107 = mul i64 %IndexSExt106, 83
+  %IndexValAdd108 = add i64 %IndexValMul107, 29
+  %217 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd108
+  %OldBBCounter109 = load i64, i64* %217
+  %NewBBCounter110 = add i64 %OldBBCounter109, 1
+  store i64 %NewBBCounter110, i64* %217
+  store double %214, double* %27, align 8, !tbaa !2
+  br label %218
+
+; <label>:218:                                    ; preds = %216, %188
+  %IndexSExt111 = sext i32 %5 to i64
+  %IndexValMul112 = mul i64 %IndexSExt111, 83
+  %IndexValAdd113 = add i64 %IndexValMul112, 30
+  %219 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd113
+  %OldBBCounter114 = load i64, i64* %219
+  %NewBBCounter115 = add i64 %OldBBCounter114, 1
+  store i64 %NewBBCounter115, i64* %219
+  call void @__kmpc_for_static_fini(%ident_t* nonnull @1, i32 %39) #2
+  %220 = bitcast [1 x i8*]* %28 to double**
+  store double* %27, double** %220, align 8
+  %221 = bitcast [1 x i8*]* %28 to i8*
+  %222 = call i32 @__kmpc_reduce(%ident_t* nonnull @3, i32 %39, i32 1, i64 8, i8* nonnull %221, void (i8*, i8*)* nonnull @.omp.reduction.reduction_func, [8 x i32]* nonnull @.gomp_critical_user_.reduction.var) #2
+  switch i32 %222, label %244 [
+    i32 1, label %223
+    i32 2, label %228
+  ]
+
+; <label>:223:                                    ; preds = %218
+  %IndexSExt116 = sext i32 %5 to i64
+  %IndexValMul117 = mul i64 %IndexSExt116, 83
+  %IndexValAdd118 = add i64 %IndexValMul117, 31
+  %224 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd118
+  %OldBBCounter119 = load i64, i64* %224
+  %NewBBCounter120 = add i64 %OldBBCounter119, 1
+  store i64 %NewBBCounter120, i64* %224
+  %225 = load double, double* %3, align 8, !tbaa !2
+  %226 = load double, double* %27, align 8, !tbaa !2
+  %227 = fadd double %225, %226
+  store double %227, double* %3, align 8, !tbaa !2
+  call void @__kmpc_end_reduce(%ident_t* nonnull @3, i32 %39, [8 x i32]* nonnull @.gomp_critical_user_.reduction.var) #2
+  br label %244
+
+; <label>:228:                                    ; preds = %218
+  %IndexSExt121 = sext i32 %5 to i64
+  %IndexValMul122 = mul i64 %IndexSExt121, 83
+  %IndexValAdd123 = add i64 %IndexValMul122, 32
+  %229 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd123
+  %OldBBCounter124 = load i64, i64* %229
+  %NewBBCounter125 = add i64 %OldBBCounter124, 1
+  store i64 %NewBBCounter125, i64* %229
+  %230 = bitcast double* %3 to i64*
+  %231 = load atomic i64, i64* %230 monotonic, align 8, !tbaa !2
+  %232 = load double, double* %27, align 8, !tbaa !2
+  br label %233
+
+; <label>:233:                                    ; preds = %233, %228
+  %234 = phi i64 [ %231, %228 ], [ %240, %233 ]
+  %IndexSExt126 = sext i32 %5 to i64
+  %IndexValMul127 = mul i64 %IndexSExt126, 83
+  %IndexValAdd128 = add i64 %IndexValMul127, 33
+  %235 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd128
+  %OldBBCounter129 = load i64, i64* %235
+  %NewBBCounter130 = add i64 %OldBBCounter129, 1
+  store i64 %NewBBCounter130, i64* %235
+  %236 = bitcast i64 %234 to double
+  %237 = fadd double %232, %236
+  %238 = bitcast double %237 to i64
+  %239 = cmpxchg i64* %230, i64 %234, i64 %238 monotonic monotonic
+  %240 = extractvalue { i64, i1 } %239, 0
+  %241 = extractvalue { i64, i1 } %239, 1
+  br i1 %241, label %242, label %233
+
+; <label>:242:                                    ; preds = %233
+  %IndexSExt131 = sext i32 %5 to i64
+  %IndexValMul132 = mul i64 %IndexSExt131, 83
+  %IndexValAdd133 = add i64 %IndexValMul132, 34
+  %243 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd133
+  %OldBBCounter134 = load i64, i64* %243
+  %NewBBCounter135 = add i64 %OldBBCounter134, 1
+  store i64 %NewBBCounter135, i64* %243
+  call void @__kmpc_end_reduce(%ident_t* nonnull @3, i32 %39, [8 x i32]* nonnull @.gomp_critical_user_.reduction.var) #2
+  br label %244
+
+; <label>:244:                                    ; preds = %242, %223, %218
+  %IndexSExt136 = sext i32 %5 to i64
+  %IndexValMul137 = mul i64 %IndexSExt136, 83
+  %IndexValAdd138 = add i64 %IndexValMul137, 35
+  %245 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd138
+  %OldBBCounter139 = load i64, i64* %245
+  %NewBBCounter140 = add i64 %OldBBCounter139, 1
+  store i64 %NewBBCounter140, i64* %245
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %194) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %193) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %192) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %191) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %190) #2
+  call void @__kmpc_barrier(%ident_t* nonnull @2, i32 %39) #2
+  %246 = bitcast i32* %29 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %246) #2
+  store i32 0, i32* %29, align 4, !tbaa !6
+  %247 = bitcast i32* %30 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %247) #2
+  store i32 499, i32* %30, align 4, !tbaa !6
+  %248 = bitcast i32* %31 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %248) #2
+  store i32 1, i32* %31, align 4, !tbaa !6
+  %249 = bitcast i32* %32 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %249) #2
+  store i32 0, i32* %32, align 4, !tbaa !6
+  %250 = bitcast double* %33 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %250) #2
+  store double 0.000000e+00, double* %33, align 8, !tbaa !2
+  call void @__kmpc_for_static_init_4(%ident_t* nonnull @1, i32 %39, i32 34, i32* nonnull %32, i32* nonnull %29, i32* nonnull %30, i32* nonnull %31, i32 1, i32 1) #2
+  %251 = load i32, i32* %30, align 4, !tbaa !6
+  %252 = icmp slt i32 %251, 499
+  %253 = select i1 %252, i32 %251, i32 499
+  store i32 %253, i32* %30, align 4, !tbaa !6
+  %254 = load i32, i32* %29, align 4, !tbaa !6
+  %255 = icmp sgt i32 %254, %253
+  br i1 %255, label %274, label %256
+
+; <label>:256:                                    ; preds = %244
+  %IndexSExt141 = sext i32 %5 to i64
+  %IndexValMul142 = mul i64 %IndexSExt141, 83
+  %IndexValAdd143 = add i64 %IndexValMul142, 36
+  %257 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd143
+  %OldBBCounter144 = load i64, i64* %257
+  %NewBBCounter145 = add i64 %OldBBCounter144, 1
+  store i64 %NewBBCounter145, i64* %257
+  %258 = sext i32 %254 to i64
+  %259 = sext i32 %253 to i64
+  br label %260
+
+; <label>:260:                                    ; preds = %260, %256
+  %261 = phi i64 [ %270, %260 ], [ %258, %256 ]
+  %262 = phi double [ %269, %260 ], [ 0.000000e+00, %256 ]
+  %IndexSExt146 = sext i32 %5 to i64
+  %IndexValMul147 = mul i64 %IndexSExt146, 83
+  %IndexValAdd148 = add i64 %IndexValMul147, 37
+  %263 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd148
+  %OldBBCounter149 = load i64, i64* %263
+  %NewBBCounter150 = add i64 %OldBBCounter149, 1
+  store i64 %NewBBCounter150, i64* %263
+  %264 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 499, i64 %261
+  %265 = load double, double* %264, align 8, !tbaa !2
+  %266 = fadd double %262, %265
+  %267 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 0, i64 %261
+  %268 = load double, double* %267, align 8, !tbaa !2
+  %269 = fadd double %266, %268
+  %270 = add nsw i64 %261, 1
+  %271 = icmp slt i64 %261, %259
+  br i1 %271, label %260, label %272
+
+; <label>:272:                                    ; preds = %260
+  %IndexSExt151 = sext i32 %5 to i64
+  %IndexValMul152 = mul i64 %IndexSExt151, 83
+  %IndexValAdd153 = add i64 %IndexValMul152, 38
+  %273 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd153
+  %OldBBCounter154 = load i64, i64* %273
+  %NewBBCounter155 = add i64 %OldBBCounter154, 1
+  store i64 %NewBBCounter155, i64* %273
+  store double %269, double* %33, align 8, !tbaa !2
+  br label %274
+
+; <label>:274:                                    ; preds = %272, %244
+  %IndexSExt156 = sext i32 %5 to i64
+  %IndexValMul157 = mul i64 %IndexSExt156, 83
+  %IndexValAdd158 = add i64 %IndexValMul157, 39
+  %275 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd158
+  %OldBBCounter159 = load i64, i64* %275
+  %NewBBCounter160 = add i64 %OldBBCounter159, 1
+  store i64 %NewBBCounter160, i64* %275
+  call void @__kmpc_for_static_fini(%ident_t* nonnull @1, i32 %39) #2
+  %276 = bitcast [1 x i8*]* %34 to double**
+  store double* %33, double** %276, align 8
+  %277 = bitcast [1 x i8*]* %34 to i8*
+  %278 = call i32 @__kmpc_reduce(%ident_t* nonnull @3, i32 %39, i32 1, i64 8, i8* nonnull %277, void (i8*, i8*)* nonnull @.omp.reduction.reduction_func.10, [8 x i32]* nonnull @.gomp_critical_user_.reduction.var) #2
+  switch i32 %278, label %300 [
+    i32 1, label %279
+    i32 2, label %284
+  ]
+
+; <label>:279:                                    ; preds = %274
+  %IndexSExt161 = sext i32 %5 to i64
+  %IndexValMul162 = mul i64 %IndexSExt161, 83
+  %IndexValAdd163 = add i64 %IndexValMul162, 40
+  %280 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd163
+  %OldBBCounter164 = load i64, i64* %280
+  %NewBBCounter165 = add i64 %OldBBCounter164, 1
+  store i64 %NewBBCounter165, i64* %280
+  %281 = load double, double* %3, align 8, !tbaa !2
+  %282 = load double, double* %33, align 8, !tbaa !2
+  %283 = fadd double %281, %282
+  store double %283, double* %3, align 8, !tbaa !2
+  call void @__kmpc_end_reduce(%ident_t* nonnull @3, i32 %39, [8 x i32]* nonnull @.gomp_critical_user_.reduction.var) #2
+  br label %300
+
+; <label>:284:                                    ; preds = %274
+  %IndexSExt166 = sext i32 %5 to i64
+  %IndexValMul167 = mul i64 %IndexSExt166, 83
+  %IndexValAdd168 = add i64 %IndexValMul167, 41
+  %285 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd168
+  %OldBBCounter169 = load i64, i64* %285
+  %NewBBCounter170 = add i64 %OldBBCounter169, 1
+  store i64 %NewBBCounter170, i64* %285
+  %286 = bitcast double* %3 to i64*
+  %287 = load atomic i64, i64* %286 monotonic, align 8, !tbaa !2
+  %288 = load double, double* %33, align 8, !tbaa !2
+  br label %289
+
+; <label>:289:                                    ; preds = %289, %284
+  %290 = phi i64 [ %287, %284 ], [ %296, %289 ]
+  %IndexSExt171 = sext i32 %5 to i64
+  %IndexValMul172 = mul i64 %IndexSExt171, 83
+  %IndexValAdd173 = add i64 %IndexValMul172, 42
+  %291 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd173
+  %OldBBCounter174 = load i64, i64* %291
+  %NewBBCounter175 = add i64 %OldBBCounter174, 1
+  store i64 %NewBBCounter175, i64* %291
+  %292 = bitcast i64 %290 to double
+  %293 = fadd double %288, %292
+  %294 = bitcast double %293 to i64
+  %295 = cmpxchg i64* %286, i64 %290, i64 %294 monotonic monotonic
+  %296 = extractvalue { i64, i1 } %295, 0
+  %297 = extractvalue { i64, i1 } %295, 1
+  br i1 %297, label %298, label %289
+
+; <label>:298:                                    ; preds = %289
+  %IndexSExt176 = sext i32 %5 to i64
+  %IndexValMul177 = mul i64 %IndexSExt176, 83
+  %IndexValAdd178 = add i64 %IndexValMul177, 43
+  %299 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd178
+  %OldBBCounter179 = load i64, i64* %299
+  %NewBBCounter180 = add i64 %OldBBCounter179, 1
+  store i64 %NewBBCounter180, i64* %299
+  call void @__kmpc_end_reduce(%ident_t* nonnull @3, i32 %39, [8 x i32]* nonnull @.gomp_critical_user_.reduction.var) #2
+  br label %300
+
+; <label>:300:                                    ; preds = %298, %279, %274
+  %IndexSExt181 = sext i32 %5 to i64
+  %IndexValMul182 = mul i64 %IndexSExt181, 83
+  %IndexValAdd183 = add i64 %IndexValMul182, 44
+  %301 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd183
+  %OldBBCounter184 = load i64, i64* %301
+  %NewBBCounter185 = add i64 %OldBBCounter184, 1
+  store i64 %NewBBCounter185, i64* %301
+  call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %250) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %249) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %248) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %247) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %246) #2
+  call void @__kmpc_barrier(%ident_t* nonnull @2, i32 %39) #2
+  ret void
+}
+
+declare void @__kmpc_fork_call(%ident_t*, i32, void (i32*, i32*, ...)*, ...) local_unnamed_addr
+
+; Function Attrs: nounwind uwtable
+define internal void @.omp_outlined..12(i32* noalias nocapture readonly, i32* noalias nocapture readnone, [500 x [500 x double]]* nocapture dereferenceable(2000000), double* nocapture readonly dereferenceable(8)) #0 {
+  %5 = call i32 @sched_getcpu()
+  %IndexSExt = sext i32 %5 to i64
+  %IndexValMul = mul i64 %IndexSExt, 83
+  %IndexValAdd = add i64 %IndexValMul, 45
+  %6 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
+  %OldBBCounter = load i64, i64* %6
+  %NewBBCounter = add i64 %OldBBCounter, 1
+  store i64 %NewBBCounter, i64* %6
+  %7 = alloca i32, align 4
+  %8 = alloca i32, align 4
+  %9 = alloca i32, align 4
+  %10 = alloca i32, align 4
+  %11 = bitcast i32* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %11) #2
+  store i32 0, i32* %7, align 4, !tbaa !6
+  %12 = bitcast i32* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %12) #2
+  store i32 497, i32* %8, align 4, !tbaa !6
+  %13 = bitcast i32* %9 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %13) #2
+  store i32 1, i32* %9, align 4, !tbaa !6
+  %14 = bitcast i32* %10 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %14) #2
+  store i32 0, i32* %10, align 4, !tbaa !6
+  %15 = load i32, i32* %0, align 4, !tbaa !6
+  call void @__kmpc_for_static_init_4(%ident_t* nonnull @1, i32 %15, i32 34, i32* nonnull %10, i32* nonnull %7, i32* nonnull %8, i32* nonnull %9, i32 1, i32 1) #2
+  %16 = load i32, i32* %8, align 4, !tbaa !6
+  %17 = icmp slt i32 %16, 497
+  %18 = select i1 %17, i32 %16, i32 497
+  store i32 %18, i32* %8, align 4, !tbaa !6
+  %19 = load i32, i32* %7, align 4, !tbaa !6
+  %20 = icmp sgt i32 %19, %18
+  br i1 %20, label %111, label %21
+
+; <label>:21:                                     ; preds = %4
+  %IndexSExt1 = sext i32 %5 to i64
+  %IndexValMul2 = mul i64 %IndexSExt1, 83
+  %IndexValAdd3 = add i64 %IndexValMul2, 46
+  %22 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd3
+  %OldBBCounter4 = load i64, i64* %22
+  %NewBBCounter5 = add i64 %OldBBCounter4, 1
+  store i64 %NewBBCounter5, i64* %22
+  %23 = bitcast double* %3 to i8*
+  %24 = bitcast double* %3 to i64*
+  %25 = sext i32 %19 to i64
+  %26 = sext i32 %18 to i64
+  %27 = add nsw i64 %25, 1
+  %28 = getelementptr i8, i8* %23, i64 1
+  br label %29
+
+; <label>:29:                                     ; preds = %107, %21
+  %30 = phi i64 [ %110, %107 ], [ 0, %21 ]
+  %31 = phi i64 [ %34, %107 ], [ %25, %21 ]
+  %IndexSExt6 = sext i32 %5 to i64
+  %IndexValMul7 = mul i64 %IndexSExt6, 83
+  %IndexValAdd8 = add i64 %IndexValMul7, 47
+  %32 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd8
+  %OldBBCounter9 = load i64, i64* %32
+  %NewBBCounter10 = add i64 %OldBBCounter9, 1
+  store i64 %NewBBCounter10, i64* %32
+  %33 = add i64 %27, %30
+  %34 = add nsw i64 %31, 1
+  %35 = getelementptr [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %33, i64 499
+  %36 = getelementptr [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %33, i64 1
+  %37 = bitcast double* %36 to i8*
+  %38 = icmp ugt i8* %28, %37
+  %39 = icmp ugt double* %35, %3
+  %40 = and i1 %38, %39
+  br i1 %40, label %68, label %41
+
+; <label>:41:                                     ; preds = %29
+  %IndexSExt11 = sext i32 %5 to i64
+  %IndexValMul12 = mul i64 %IndexSExt11, 83
+  %IndexValAdd13 = add i64 %IndexValMul12, 48
+  %42 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd13
+  %OldBBCounter14 = load i64, i64* %42
+  %NewBBCounter15 = add i64 %OldBBCounter14, 1
+  store i64 %NewBBCounter15, i64* %42
+  %43 = load i64, i64* %24, align 8, !tbaa !2, !alias.scope !14
+  %44 = insertelement <2 x i64> undef, i64 %43, i32 0
+  %45 = shufflevector <2 x i64> %44, <2 x i64> undef, <2 x i32> zeroinitializer
+  %46 = insertelement <2 x i64> undef, i64 %43, i32 0
+  %47 = shufflevector <2 x i64> %46, <2 x i64> undef, <2 x i32> zeroinitializer
+  %48 = load i64, i64* %24, align 8, !tbaa !2, !alias.scope !14
+  %49 = insertelement <2 x i64> undef, i64 %48, i32 0
+  %50 = shufflevector <2 x i64> %49, <2 x i64> undef, <2 x i32> zeroinitializer
+  %51 = insertelement <2 x i64> undef, i64 %48, i32 0
+  %52 = shufflevector <2 x i64> %51, <2 x i64> undef, <2 x i32> zeroinitializer
+  br label %53
+
+; <label>:53:                                     ; preds = %53, %41
+  %54 = phi i64 [ 0, %41 ], [ %66, %53 ]
+  %IndexSExt16 = sext i32 %5 to i64
+  %IndexValMul17 = mul i64 %IndexSExt16, 83
+  %IndexValAdd18 = add i64 %IndexValMul17, 49
+  %55 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd18
+  %OldBBCounter19 = load i64, i64* %55
+  %NewBBCounter20 = add i64 %OldBBCounter19, 1
+  store i64 %NewBBCounter20, i64* %55
+  %56 = or i64 %54, 1
+  %57 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %34, i64 %56
+  %58 = bitcast double* %57 to <2 x i64>*
+  store <2 x i64> %45, <2 x i64>* %58, align 8, !tbaa !2, !alias.scope !17, !noalias !14
+  %59 = getelementptr double, double* %57, i64 2
+  %60 = bitcast double* %59 to <2 x i64>*
+  store <2 x i64> %47, <2 x i64>* %60, align 8, !tbaa !2, !alias.scope !17, !noalias !14
+  %61 = or i64 %54, 5
+  %62 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %34, i64 %61
+  %63 = bitcast double* %62 to <2 x i64>*
+  store <2 x i64> %50, <2 x i64>* %63, align 8, !tbaa !2, !alias.scope !17, !noalias !14
+  %64 = getelementptr double, double* %62, i64 2
+  %65 = bitcast double* %64 to <2 x i64>*
+  store <2 x i64> %52, <2 x i64>* %65, align 8, !tbaa !2, !alias.scope !17, !noalias !14
+  %66 = add nuw nsw i64 %54, 8
+  %67 = icmp eq i64 %66, 496
+  br i1 %67, label %68, label %53, !llvm.loop !19
+
+; <label>:68:                                     ; preds = %53, %29
+  %69 = phi i64 [ 1, %29 ], [ 497, %53 ]
+  %IndexSExt21 = sext i32 %5 to i64
+  %IndexValMul22 = mul i64 %IndexSExt21, 83
+  %IndexValAdd23 = add i64 %IndexValMul22, 50
+  %70 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd23
+  %OldBBCounter24 = load i64, i64* %70
+  %NewBBCounter25 = add i64 %OldBBCounter24, 1
+  store i64 %NewBBCounter25, i64* %70
+  %71 = sub nsw i64 498, %69
+  br label %72
+
+; <label>:72:                                     ; preds = %72, %68
+  %73 = phi i64 [ %79, %72 ], [ %69, %68 ]
+  %74 = phi i64 [ %80, %72 ], [ 2, %68 ]
+  %IndexSExt26 = sext i32 %5 to i64
+  %IndexValMul27 = mul i64 %IndexSExt26, 83
+  %IndexValAdd28 = add i64 %IndexValMul27, 51
+  %75 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd28
+  %OldBBCounter29 = load i64, i64* %75
+  %NewBBCounter30 = add i64 %OldBBCounter29, 1
+  store i64 %NewBBCounter30, i64* %75
+  %76 = load i64, i64* %24, align 8, !tbaa !2
+  %77 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %34, i64 %73
+  %78 = bitcast double* %77 to i64*
+  store i64 %76, i64* %78, align 8, !tbaa !2
+  %79 = add nuw nsw i64 %73, 1
+  %80 = add i64 %74, -1
+  %81 = icmp eq i64 %80, 0
+  br i1 %81, label %82, label %72, !llvm.loop !20
+
+; <label>:82:                                     ; preds = %72
+  %IndexSExt31 = sext i32 %5 to i64
+  %IndexValMul32 = mul i64 %IndexSExt31, 83
+  %IndexValAdd33 = add i64 %IndexValMul32, 52
+  %83 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd33
+  %OldBBCounter34 = load i64, i64* %83
+  %NewBBCounter35 = add i64 %OldBBCounter34, 1
+  store i64 %NewBBCounter35, i64* %83
+  %84 = icmp ult i64 %71, 3
+  br i1 %84, label %107, label %85
+
+; <label>:85:                                     ; preds = %82
+  %IndexSExt36 = sext i32 %5 to i64
+  %IndexValMul37 = mul i64 %IndexSExt36, 83
+  %IndexValAdd38 = add i64 %IndexValMul37, 53
+  %86 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd38
+  %OldBBCounter39 = load i64, i64* %86
+  %NewBBCounter40 = add i64 %OldBBCounter39, 1
+  store i64 %NewBBCounter40, i64* %86
+  br label %87
+
+; <label>:87:                                     ; preds = %87, %85
+  %88 = phi i64 [ %79, %85 ], [ %105, %87 ]
+  %IndexSExt41 = sext i32 %5 to i64
+  %IndexValMul42 = mul i64 %IndexSExt41, 83
+  %IndexValAdd43 = add i64 %IndexValMul42, 54
+  %89 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd43
+  %OldBBCounter44 = load i64, i64* %89
+  %NewBBCounter45 = add i64 %OldBBCounter44, 1
+  store i64 %NewBBCounter45, i64* %89
+  %90 = load i64, i64* %24, align 8, !tbaa !2
+  %91 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %34, i64 %88
+  %92 = bitcast double* %91 to i64*
+  store i64 %90, i64* %92, align 8, !tbaa !2
+  %93 = add nuw nsw i64 %88, 1
+  %94 = load i64, i64* %24, align 8, !tbaa !2
+  %95 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %34, i64 %93
+  %96 = bitcast double* %95 to i64*
+  store i64 %94, i64* %96, align 8, !tbaa !2
+  %97 = add nsw i64 %88, 2
+  %98 = load i64, i64* %24, align 8, !tbaa !2
+  %99 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %34, i64 %97
+  %100 = bitcast double* %99 to i64*
+  store i64 %98, i64* %100, align 8, !tbaa !2
+  %101 = add nsw i64 %88, 3
+  %102 = load i64, i64* %24, align 8, !tbaa !2
+  %103 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %34, i64 %101
+  %104 = bitcast double* %103 to i64*
+  store i64 %102, i64* %104, align 8, !tbaa !2
+  %105 = add nsw i64 %88, 4
+  %106 = icmp eq i64 %105, 499
+  br i1 %106, label %107, label %87, !llvm.loop !21
+
+; <label>:107:                                    ; preds = %87, %82
+  %IndexSExt46 = sext i32 %5 to i64
+  %IndexValMul47 = mul i64 %IndexSExt46, 83
+  %IndexValAdd48 = add i64 %IndexValMul47, 55
+  %108 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd48
+  %OldBBCounter49 = load i64, i64* %108
+  %NewBBCounter50 = add i64 %OldBBCounter49, 1
+  store i64 %NewBBCounter50, i64* %108
+  %109 = icmp slt i64 %31, %26
+  %110 = add i64 %30, 1
+  br i1 %109, label %29, label %111
+
+; <label>:111:                                    ; preds = %107, %4
+  %IndexSExt51 = sext i32 %5 to i64
+  %IndexValMul52 = mul i64 %IndexSExt51, 83
+  %IndexValAdd53 = add i64 %IndexValMul52, 56
+  %112 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd53
+  %OldBBCounter54 = load i64, i64* %112
+  %NewBBCounter55 = add i64 %OldBBCounter54, 1
+  store i64 %NewBBCounter55, i64* %112
+  call void @__kmpc_for_static_fini(%ident_t* nonnull @1, i32 %15) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %14) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %13) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %12) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %11) #2
+  call void @__kmpc_barrier(%ident_t* nonnull @2, i32 %15) #2
+  ret void
+}
+
+declare double @omp_get_wtime() local_unnamed_addr #4
+
+; Function Attrs: nounwind uwtable
+define internal void @.omp_outlined..14(i32* noalias nocapture readonly, i32* noalias nocapture readnone, [500 x [500 x double]]* nocapture dereferenceable(2000000), [500 x [500 x double]]* nocapture dereferenceable(2000000)) #0 {
+  %5 = call i32 @sched_getcpu()
+  %IndexSExt = sext i32 %5 to i64
+  %IndexValMul = mul i64 %IndexSExt, 83
+  %IndexValAdd = add i64 %IndexValMul, 57
+  %6 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
+  %OldBBCounter = load i64, i64* %6
+  %NewBBCounter = add i64 %OldBBCounter, 1
+  store i64 %NewBBCounter, i64* %6
+  %7 = alloca i32, align 4
+  %8 = alloca i32, align 4
+  %9 = alloca i32, align 4
+  %10 = alloca i32, align 4
+  %11 = alloca i32, align 4
+  %12 = alloca i32, align 4
+  %13 = alloca i32, align 4
+  %14 = alloca i32, align 4
+  %15 = bitcast i32* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %15) #2
+  store i32 0, i32* %7, align 4, !tbaa !6
+  %16 = bitcast i32* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %16) #2
+  store i32 499, i32* %8, align 4, !tbaa !6
+  %17 = bitcast i32* %9 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %17) #2
+  store i32 1, i32* %9, align 4, !tbaa !6
+  %18 = bitcast i32* %10 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %18) #2
+  store i32 0, i32* %10, align 4, !tbaa !6
+  %19 = load i32, i32* %0, align 4, !tbaa !6
+  call void @__kmpc_for_static_init_4(%ident_t* nonnull @1, i32 %19, i32 34, i32* nonnull %10, i32* nonnull %7, i32* nonnull %8, i32* nonnull %9, i32 1, i32 1) #2
+  %20 = load i32, i32* %8, align 4, !tbaa !6
+  %21 = icmp slt i32 %20, 499
+  %22 = select i1 %21, i32 %20, i32 499
+  store i32 %22, i32* %8, align 4, !tbaa !6
+  %23 = load i32, i32* %7, align 4, !tbaa !6
+  %24 = icmp sgt i32 %23, %22
+  br i1 %24, label %101, label %25
+
+; <label>:25:                                     ; preds = %4
+  %IndexSExt1 = sext i32 %5 to i64
+  %IndexValMul2 = mul i64 %IndexSExt1, 83
+  %IndexValAdd3 = add i64 %IndexValMul2, 58
+  %26 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd3
+  %OldBBCounter4 = load i64, i64* %26
+  %NewBBCounter5 = add i64 %OldBBCounter4, 1
+  store i64 %NewBBCounter5, i64* %26
+  %27 = sext i32 %23 to i64
+  %28 = sext i32 %22 to i64
+  %29 = add nsw i64 %27, 1
+  br label %30
+
+; <label>:30:                                     ; preds = %96, %25
+  %31 = phi i64 [ %100, %96 ], [ 0, %25 ]
+  %32 = phi i64 [ %98, %96 ], [ %27, %25 ]
+  %IndexSExt6 = sext i32 %5 to i64
+  %IndexValMul7 = mul i64 %IndexSExt6, 83
+  %IndexValAdd8 = add i64 %IndexValMul7, 59
+  %33 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd8
+  %OldBBCounter9 = load i64, i64* %33
+  %NewBBCounter10 = add i64 %OldBBCounter9, 1
+  store i64 %NewBBCounter10, i64* %33
+  %34 = add i64 %31, %27
+  %35 = add i64 %29, %31
+  %36 = getelementptr [500 x [500 x double]], [500 x [500 x double]]* %3, i64 0, i64 %35, i64 0
+  %37 = getelementptr [500 x [500 x double]], [500 x [500 x double]]* %3, i64 0, i64 %34, i64 0
+  %38 = getelementptr [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %35, i64 0
+  %39 = getelementptr [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %34, i64 0
+  %40 = icmp ult double* %39, %36
+  %41 = icmp ult double* %37, %38
+  %42 = and i1 %40, %41
+  br i1 %42, label %45, label %43
+
+; <label>:43:                                     ; preds = %30
+  %IndexSExt11 = sext i32 %5 to i64
+  %IndexValMul12 = mul i64 %IndexSExt11, 83
+  %IndexValAdd13 = add i64 %IndexValMul12, 60
+  %44 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd13
+  %OldBBCounter14 = load i64, i64* %44
+  %NewBBCounter15 = add i64 %OldBBCounter14, 1
+  store i64 %NewBBCounter15, i64* %44
+  br label %47
+
+; <label>:45:                                     ; preds = %30
+  %IndexSExt16 = sext i32 %5 to i64
+  %IndexValMul17 = mul i64 %IndexSExt16, 83
+  %IndexValAdd18 = add i64 %IndexValMul17, 61
+  %46 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd18
+  %OldBBCounter19 = load i64, i64* %46
+  %NewBBCounter20 = add i64 %OldBBCounter19, 1
+  store i64 %NewBBCounter20, i64* %46
+  br label %62
+
+; <label>:47:                                     ; preds = %208, %43
+  %48 = phi i64 [ 0, %43 ], [ %220, %208 ]
+  %IndexSExt21 = sext i32 %5 to i64
+  %IndexValMul22 = mul i64 %IndexSExt21, 83
+  %IndexValAdd23 = add i64 %IndexValMul22, 62
+  %49 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd23
+  %OldBBCounter24 = load i64, i64* %49
+  %NewBBCounter25 = add i64 %OldBBCounter24, 1
+  store i64 %NewBBCounter25, i64* %49
+  %50 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %3, i64 0, i64 %32, i64 %48
+  %51 = bitcast double* %50 to <2 x i64>*
+  %52 = load <2 x i64>, <2 x i64>* %51, align 8, !tbaa !2, !alias.scope !22
+  %53 = getelementptr double, double* %50, i64 2
+  %54 = bitcast double* %53 to <2 x i64>*
+  %55 = load <2 x i64>, <2 x i64>* %54, align 8, !tbaa !2, !alias.scope !22
+  %56 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %32, i64 %48
+  %57 = bitcast double* %56 to <2 x i64>*
+  store <2 x i64> %52, <2 x i64>* %57, align 8, !tbaa !2, !alias.scope !25, !noalias !22
+  %58 = getelementptr double, double* %56, i64 2
+  %59 = bitcast double* %58 to <2 x i64>*
+  store <2 x i64> %55, <2 x i64>* %59, align 8, !tbaa !2, !alias.scope !25, !noalias !22
+  %60 = or i64 %48, 4
+  %61 = icmp eq i64 %60, 500
+  br i1 %61, label %96, label %208, !llvm.loop !27
+
+; <label>:62:                                     ; preds = %62, %45
+  %63 = phi i64 [ 0, %45 ], [ %94, %62 ]
+  %IndexSExt26 = sext i32 %5 to i64
+  %IndexValMul27 = mul i64 %IndexSExt26, 83
+  %IndexValAdd28 = add i64 %IndexValMul27, 63
+  %64 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd28
+  %OldBBCounter29 = load i64, i64* %64
+  %NewBBCounter30 = add i64 %OldBBCounter29, 1
+  store i64 %NewBBCounter30, i64* %64
+  %65 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %3, i64 0, i64 %32, i64 %63
+  %66 = bitcast double* %65 to i64*
+  %67 = load i64, i64* %66, align 8, !tbaa !2
+  %68 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %32, i64 %63
+  %69 = bitcast double* %68 to i64*
+  store i64 %67, i64* %69, align 8, !tbaa !2
+  %70 = add nuw nsw i64 %63, 1
+  %71 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %3, i64 0, i64 %32, i64 %70
+  %72 = bitcast double* %71 to i64*
+  %73 = load i64, i64* %72, align 8, !tbaa !2
+  %74 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %32, i64 %70
+  %75 = bitcast double* %74 to i64*
+  store i64 %73, i64* %75, align 8, !tbaa !2
+  %76 = add nuw nsw i64 %63, 2
+  %77 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %3, i64 0, i64 %32, i64 %76
+  %78 = bitcast double* %77 to i64*
+  %79 = load i64, i64* %78, align 8, !tbaa !2
+  %80 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %32, i64 %76
+  %81 = bitcast double* %80 to i64*
+  store i64 %79, i64* %81, align 8, !tbaa !2
+  %82 = add nuw nsw i64 %63, 3
+  %83 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %3, i64 0, i64 %32, i64 %82
+  %84 = bitcast double* %83 to i64*
+  %85 = load i64, i64* %84, align 8, !tbaa !2
+  %86 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %32, i64 %82
+  %87 = bitcast double* %86 to i64*
+  store i64 %85, i64* %87, align 8, !tbaa !2
+  %88 = add nuw nsw i64 %63, 4
+  %89 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %3, i64 0, i64 %32, i64 %88
+  %90 = bitcast double* %89 to i64*
+  %91 = load i64, i64* %90, align 8, !tbaa !2
+  %92 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %32, i64 %88
+  %93 = bitcast double* %92 to i64*
+  store i64 %91, i64* %93, align 8, !tbaa !2
+  %94 = add nuw nsw i64 %63, 5
+  %95 = icmp eq i64 %94, 500
+  br i1 %95, label %96, label %62, !llvm.loop !28
+
+; <label>:96:                                     ; preds = %47, %62
+  %IndexSExt31 = sext i32 %5 to i64
+  %IndexValMul32 = mul i64 %IndexSExt31, 83
+  %IndexValAdd33 = add i64 %IndexValMul32, 64
+  %97 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd33
+  %OldBBCounter34 = load i64, i64* %97
+  %NewBBCounter35 = add i64 %OldBBCounter34, 1
+  store i64 %NewBBCounter35, i64* %97
+  %98 = add nsw i64 %32, 1
+  %99 = icmp slt i64 %32, %28
+  %100 = add i64 %31, 1
+  br i1 %99, label %30, label %101
+
+; <label>:101:                                    ; preds = %96, %4
+  %IndexSExt36 = sext i32 %5 to i64
+  %IndexValMul37 = mul i64 %IndexSExt36, 83
+  %IndexValAdd38 = add i64 %IndexValMul37, 65
+  %102 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd38
+  %OldBBCounter39 = load i64, i64* %102
+  %NewBBCounter40 = add i64 %OldBBCounter39, 1
+  store i64 %NewBBCounter40, i64* %102
+  call void @__kmpc_for_static_fini(%ident_t* nonnull @1, i32 %19) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %18) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %17) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %16) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %15) #2
+  call void @__kmpc_barrier(%ident_t* nonnull @2, i32 %19) #2
+  %103 = bitcast i32* %11 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %103) #2
+  store i32 0, i32* %11, align 4, !tbaa !6
+  %104 = bitcast i32* %12 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %104) #2
+  store i32 497, i32* %12, align 4, !tbaa !6
+  %105 = bitcast i32* %13 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %105) #2
+  store i32 1, i32* %13, align 4, !tbaa !6
+  %106 = bitcast i32* %14 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %106) #2
+  store i32 0, i32* %14, align 4, !tbaa !6
+  call void @__kmpc_for_static_init_4(%ident_t* nonnull @1, i32 %19, i32 34, i32* nonnull %14, i32* nonnull %11, i32* nonnull %12, i32* nonnull %13, i32 1, i32 1) #2
+  %107 = load i32, i32* %12, align 4, !tbaa !6
+  %108 = icmp slt i32 %107, 497
+  %109 = select i1 %108, i32 %107, i32 497
+  store i32 %109, i32* %12, align 4, !tbaa !6
+  %110 = load i32, i32* %11, align 4, !tbaa !6
+  %111 = icmp sgt i32 %110, %109
+  br i1 %111, label %206, label %112
+
+; <label>:112:                                    ; preds = %101
+  %IndexSExt41 = sext i32 %5 to i64
+  %IndexValMul42 = mul i64 %IndexSExt41, 83
+  %IndexValAdd43 = add i64 %IndexValMul42, 66
+  %113 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd43
+  %OldBBCounter44 = load i64, i64* %113
+  %NewBBCounter45 = add i64 %OldBBCounter44, 1
+  store i64 %NewBBCounter45, i64* %113
+  %114 = sext i32 %110 to i64
+  %115 = sext i32 %109 to i64
+  %116 = add nsw i64 %114, 1
+  %117 = add nsw i64 %114, 2
+  br label %118
+
+; <label>:118:                                    ; preds = %202, %112
+  %119 = phi i64 [ %205, %202 ], [ 0, %112 ]
+  %120 = phi i64 [ %123, %202 ], [ %114, %112 ]
+  %IndexSExt46 = sext i32 %5 to i64
+  %IndexValMul47 = mul i64 %IndexSExt46, 83
+  %IndexValAdd48 = add i64 %IndexValMul47, 67
+  %121 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd48
+  %OldBBCounter49 = load i64, i64* %121
+  %NewBBCounter50 = add i64 %OldBBCounter49, 1
+  store i64 %NewBBCounter50, i64* %121
+  %122 = add i64 %116, %119
+  %123 = add nsw i64 %120, 1
+  %124 = add nsw i64 %120, 2
+  %125 = add i64 %117, %119
+  %126 = getelementptr [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %125, i64 499
+  %127 = add i64 %119, %114
+  %128 = getelementptr [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %127, i64 1
+  %129 = getelementptr [500 x [500 x double]], [500 x [500 x double]]* %3, i64 0, i64 %122, i64 499
+  %130 = getelementptr [500 x [500 x double]], [500 x [500 x double]]* %3, i64 0, i64 %122, i64 1
+  %131 = icmp ult double* %130, %126
+  %132 = icmp ult double* %128, %129
+  %133 = and i1 %131, %132
+  br i1 %133, label %180, label %134
+
+; <label>:134:                                    ; preds = %118
+  %IndexSExt51 = sext i32 %5 to i64
+  %IndexValMul52 = mul i64 %IndexSExt51, 83
+  %IndexValAdd53 = add i64 %IndexValMul52, 68
+  %135 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd53
+  %OldBBCounter54 = load i64, i64* %135
+  %NewBBCounter55 = add i64 %OldBBCounter54, 1
+  store i64 %NewBBCounter55, i64* %135
+  br label %136
+
+; <label>:136:                                    ; preds = %134, %136
+  %137 = phi i64 [ %178, %136 ], [ 0, %134 ]
+  %IndexSExt56 = sext i32 %5 to i64
+  %IndexValMul57 = mul i64 %IndexSExt56, 83
+  %IndexValAdd58 = add i64 %IndexValMul57, 69
+  %138 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd58
+  %OldBBCounter59 = load i64, i64* %138
+  %NewBBCounter60 = add i64 %OldBBCounter59, 1
+  store i64 %NewBBCounter60, i64* %138
+  %139 = or i64 %137, 1
+  %140 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %120, i64 %139
+  %141 = bitcast double* %140 to <2 x double>*
+  %142 = load <2 x double>, <2 x double>* %141, align 8, !tbaa !2, !alias.scope !29
+  %143 = getelementptr double, double* %140, i64 2
+  %144 = bitcast double* %143 to <2 x double>*
+  %145 = load <2 x double>, <2 x double>* %144, align 8, !tbaa !2, !alias.scope !29
+  %146 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %124, i64 %139
+  %147 = bitcast double* %146 to <2 x double>*
+  %148 = load <2 x double>, <2 x double>* %147, align 8, !tbaa !2, !alias.scope !29
+  %149 = getelementptr double, double* %146, i64 2
+  %150 = bitcast double* %149 to <2 x double>*
+  %151 = load <2 x double>, <2 x double>* %150, align 8, !tbaa !2, !alias.scope !29
+  %152 = fadd <2 x double> %142, %148
+  %153 = fadd <2 x double> %145, %151
+  %154 = add nsw i64 %139, -1
+  %155 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %123, i64 %154
+  %156 = bitcast double* %155 to <2 x double>*
+  %157 = load <2 x double>, <2 x double>* %156, align 8, !tbaa !2, !alias.scope !29
+  %158 = getelementptr double, double* %155, i64 2
+  %159 = bitcast double* %158 to <2 x double>*
+  %160 = load <2 x double>, <2 x double>* %159, align 8, !tbaa !2, !alias.scope !29
+  %161 = fadd <2 x double> %152, %157
+  %162 = fadd <2 x double> %153, %160
+  %163 = add nuw nsw i64 %139, 1
+  %164 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %123, i64 %163
+  %165 = bitcast double* %164 to <2 x double>*
+  %166 = load <2 x double>, <2 x double>* %165, align 8, !tbaa !2, !alias.scope !29
+  %167 = getelementptr double, double* %164, i64 2
+  %168 = bitcast double* %167 to <2 x double>*
+  %169 = load <2 x double>, <2 x double>* %168, align 8, !tbaa !2, !alias.scope !29
+  %170 = fadd <2 x double> %161, %166
+  %171 = fadd <2 x double> %162, %169
+  %172 = fmul <2 x double> %170, <double 2.500000e-01, double 2.500000e-01>
+  %173 = fmul <2 x double> %171, <double 2.500000e-01, double 2.500000e-01>
+  %174 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %3, i64 0, i64 %123, i64 %139
+  %175 = bitcast double* %174 to <2 x double>*
+  store <2 x double> %172, <2 x double>* %175, align 8, !tbaa !2, !alias.scope !32, !noalias !29
+  %176 = getelementptr double, double* %174, i64 2
+  %177 = bitcast double* %176 to <2 x double>*
+  store <2 x double> %173, <2 x double>* %177, align 8, !tbaa !2, !alias.scope !32, !noalias !29
+  %178 = add i64 %137, 4
+  %179 = icmp eq i64 %178, 496
+  br i1 %179, label %180, label %136, !llvm.loop !34
+
+; <label>:180:                                    ; preds = %136, %118
+  %181 = phi i64 [ 1, %118 ], [ 497, %136 ]
+  %IndexSExt61 = sext i32 %5 to i64
+  %IndexValMul62 = mul i64 %IndexSExt61, 83
+  %IndexValAdd63 = add i64 %IndexValMul62, 70
+  %182 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd63
+  %OldBBCounter64 = load i64, i64* %182
+  %NewBBCounter65 = add i64 %OldBBCounter64, 1
+  store i64 %NewBBCounter65, i64* %182
+  br label %183
+
+; <label>:183:                                    ; preds = %180, %183
+  %184 = phi i64 [ %195, %183 ], [ %181, %180 ]
+  %IndexSExt66 = sext i32 %5 to i64
+  %IndexValMul67 = mul i64 %IndexSExt66, 83
+  %IndexValAdd68 = add i64 %IndexValMul67, 71
+  %185 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd68
+  %OldBBCounter69 = load i64, i64* %185
+  %NewBBCounter70 = add i64 %OldBBCounter69, 1
+  store i64 %NewBBCounter70, i64* %185
+  %186 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %120, i64 %184
+  %187 = load double, double* %186, align 8, !tbaa !2
+  %188 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %124, i64 %184
+  %189 = load double, double* %188, align 8, !tbaa !2
+  %190 = fadd double %187, %189
+  %191 = add nsw i64 %184, -1
+  %192 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %123, i64 %191
+  %193 = load double, double* %192, align 8, !tbaa !2
+  %194 = fadd double %190, %193
+  %195 = add nuw nsw i64 %184, 1
+  %196 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %123, i64 %195
+  %197 = load double, double* %196, align 8, !tbaa !2
+  %198 = fadd double %194, %197
+  %199 = fmul double %198, 2.500000e-01
+  %200 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %3, i64 0, i64 %123, i64 %184
+  store double %199, double* %200, align 8, !tbaa !2
+  %201 = icmp eq i64 %195, 499
+  br i1 %201, label %202, label %183, !llvm.loop !35
+
+; <label>:202:                                    ; preds = %183
+  %IndexSExt71 = sext i32 %5 to i64
+  %IndexValMul72 = mul i64 %IndexSExt71, 83
+  %IndexValAdd73 = add i64 %IndexValMul72, 72
+  %203 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd73
+  %OldBBCounter74 = load i64, i64* %203
+  %NewBBCounter75 = add i64 %OldBBCounter74, 1
+  store i64 %NewBBCounter75, i64* %203
+  %204 = icmp slt i64 %120, %115
+  %205 = add i64 %119, 1
+  br i1 %204, label %118, label %206
+
+; <label>:206:                                    ; preds = %202, %101
+  %IndexSExt76 = sext i32 %5 to i64
+  %IndexValMul77 = mul i64 %IndexSExt76, 83
+  %IndexValAdd78 = add i64 %IndexValMul77, 73
+  %207 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd78
+  %OldBBCounter79 = load i64, i64* %207
+  %NewBBCounter80 = add i64 %OldBBCounter79, 1
+  store i64 %NewBBCounter80, i64* %207
+  call void @__kmpc_for_static_fini(%ident_t* nonnull @1, i32 %19) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %106) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %105) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %104) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %103) #2
+  call void @__kmpc_barrier(%ident_t* nonnull @2, i32 %19) #2
+  ret void
+
+; <label>:208:                                    ; preds = %47
+  %IndexSExt81 = sext i32 %5 to i64
+  %IndexValMul82 = mul i64 %IndexSExt81, 83
+  %IndexValAdd83 = add i64 %IndexValMul82, 74
+  %209 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd83
+  %OldBBCounter84 = load i64, i64* %209
+  %NewBBCounter85 = add i64 %OldBBCounter84, 1
+  store i64 %NewBBCounter85, i64* %209
+  %210 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %3, i64 0, i64 %32, i64 %60
+  %211 = bitcast double* %210 to <2 x i64>*
+  %212 = load <2 x i64>, <2 x i64>* %211, align 8, !tbaa !2, !alias.scope !22
+  %213 = getelementptr double, double* %210, i64 2
+  %214 = bitcast double* %213 to <2 x i64>*
+  %215 = load <2 x i64>, <2 x i64>* %214, align 8, !tbaa !2, !alias.scope !22
+  %216 = getelementptr inbounds [500 x [500 x double]], [500 x [500 x double]]* %2, i64 0, i64 %32, i64 %60
+  %217 = bitcast double* %216 to <2 x i64>*
+  store <2 x i64> %212, <2 x i64>* %217, align 8, !tbaa !2, !alias.scope !25, !noalias !22
+  %218 = getelementptr double, double* %216, i64 2
+  %219 = bitcast double* %218 to <2 x i64>*
+  store <2 x i64> %215, <2 x i64>* %219, align 8, !tbaa !2, !alias.scope !25, !noalias !22
+  %220 = add nuw nsw i64 %48, 8
+  br label %47
+}
+
+; Function Attrs: nounwind uwtable
+define internal void @.omp_outlined..15(i32* noalias nocapture readonly, i32* noalias nocapture readnone, [500 x [500 x double]]* nocapture readonly dereferenceable(2000000), [500 x [500 x double]]* nocapture readonly dereferenceable(2000000)) #0 {
+  %5 = call i32 @sched_getcpu()
+  %IndexSExt = sext i32 %5 to i64
+  %IndexValMul = mul i64 %IndexSExt, 83
+  %IndexValAdd = add i64 %IndexValMul, 75
+  %6 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
+  %OldBBCounter = load i64, i64* %6
+  %NewBBCounter = add i64 %OldBBCounter, 1
+  store i64 %NewBBCounter, i64* %6
+  %7 = alloca i32, align 4
+  %8 = alloca i32, align 4
+  %9 = alloca i32, align 4
+  %10 = alloca i32, align 4
+  %11 = bitcast i32* %7 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %11) #2
+  store i32 0, i32* %7, align 4, !tbaa !6
+  %12 = bitcast i32* %8 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %12) #2
+  store i32 497, i32* %8, align 4, !tbaa !6
+  %13 = bitcast i32* %9 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %13) #2
+  store i32 1, i32* %9, align 4, !tbaa !6
+  %14 = bitcast i32* %10 to i8*
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %14) #2
+  store i32 0, i32* %10, align 4, !tbaa !6
+  %15 = load i32, i32* %0, align 4, !tbaa !6
+  call void @__kmpc_for_static_init_4(%ident_t* nonnull @1, i32 %15, i32 34, i32* nonnull %10, i32* nonnull %7, i32* nonnull %8, i32* nonnull %9, i32 1, i32 1) #2
+  %16 = load i32, i32* %8, align 4, !tbaa !6
+  %17 = icmp slt i32 %16, 497
+  %18 = select i1 %17, i32 %16, i32 497
+  store i32 %18, i32* %8, align 4, !tbaa !6
+  %19 = load i32, i32* %7, align 4, !tbaa !6
+  %20 = icmp sgt i32 %19, %18
+  br i1 %20, label %37, label %21
+
+; <label>:21:                                     ; preds = %4
+  %IndexSExt1 = sext i32 %5 to i64
+  %IndexValMul2 = mul i64 %IndexSExt1, 83
+  %IndexValAdd3 = add i64 %IndexValMul2, 76
+  %22 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd3
+  %OldBBCounter4 = load i64, i64* %22
+  %NewBBCounter5 = add i64 %OldBBCounter4, 1
+  store i64 %NewBBCounter5, i64* %22
+  %23 = sext i32 %19 to i64
+  %24 = sext i32 %18 to i64
+  br label %25
+
+; <label>:25:                                     ; preds = %34, %21
+  %26 = phi i64 [ %28, %34 ], [ %23, %21 ]
+  %IndexSExt6 = sext i32 %5 to i64
+  %IndexValMul7 = mul i64 %IndexSExt6, 83
+  %IndexValAdd8 = add i64 %IndexValMul7, 77
+  %27 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd8
+  %OldBBCounter9 = load i64, i64* %27
+  %NewBBCounter10 = add i64 %OldBBCounter9, 1
+  store i64 %NewBBCounter10, i64* %27
+  %28 = add nsw i64 %26, 1
+  br label %29
+
+; <label>:29:                                     ; preds = %29, %25
+  %30 = phi i64 [ 1, %25 ], [ %32, %29 ]
+  %IndexSExt11 = sext i32 %5 to i64
+  %IndexValMul12 = mul i64 %IndexSExt11, 83
+  %IndexValAdd13 = add i64 %IndexValMul12, 78
+  %31 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd13
+  %OldBBCounter14 = load i64, i64* %31
+  %NewBBCounter15 = add i64 %OldBBCounter14, 1
+  store i64 %NewBBCounter15, i64* %31
+  %32 = add nuw nsw i64 %30, 6
+  %33 = icmp eq i64 %32, 499
+  br i1 %33, label %34, label %29
+
+; <label>:34:                                     ; preds = %29
+  %IndexSExt16 = sext i32 %5 to i64
+  %IndexValMul17 = mul i64 %IndexSExt16, 83
+  %IndexValAdd18 = add i64 %IndexValMul17, 79
+  %35 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd18
+  %OldBBCounter19 = load i64, i64* %35
+  %NewBBCounter20 = add i64 %OldBBCounter19, 1
+  store i64 %NewBBCounter20, i64* %35
+  %36 = icmp slt i64 %26, %24
+  br i1 %36, label %25, label %37
+
+; <label>:37:                                     ; preds = %34, %4
+  %IndexSExt21 = sext i32 %5 to i64
+  %IndexValMul22 = mul i64 %IndexSExt21, 83
+  %IndexValAdd23 = add i64 %IndexValMul22, 80
+  %38 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd23
+  %OldBBCounter24 = load i64, i64* %38
+  %NewBBCounter25 = add i64 %OldBBCounter24, 1
+  store i64 %NewBBCounter25, i64* %38
+  call void @__kmpc_for_static_fini(%ident_t* nonnull @1, i32 %15) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %14) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %13) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %12) #2
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %11) #2
+  call void @__kmpc_barrier(%ident_t* nonnull @2, i32 %15) #2
+  ret void
+}
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.lifetime.end.p0i8(i64, i8* nocapture) #1
+
+declare void @__kmpc_for_static_init_4(%ident_t*, i32, i32, i32*, i32*, i32*, i32*, i32, i32) local_unnamed_addr
+
+declare void @__kmpc_for_static_fini(%ident_t*, i32) local_unnamed_addr
+
+declare void @__kmpc_barrier(%ident_t*, i32) local_unnamed_addr
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i32, i1) #1
+
+; Function Attrs: norecurse nounwind uwtable
+define internal void @.omp.reduction.reduction_func(i8* nocapture readonly, i8* nocapture readonly) #5 {
+  %3 = call i32 @sched_getcpu()
+  %IndexSExt = sext i32 %3 to i64
+  %IndexValMul = mul i64 %IndexSExt, 83
+  %IndexValAdd = add i64 %IndexValMul, 81
+  %4 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
+  %OldBBCounter = load i64, i64* %4
+  %NewBBCounter = add i64 %OldBBCounter, 1
+  store i64 %NewBBCounter, i64* %4
+  %5 = bitcast i8* %1 to double**
+  %6 = load double*, double** %5, align 8
+  %7 = bitcast i8* %0 to double**
+  %8 = load double*, double** %7, align 8
+  %9 = load double, double* %8, align 8, !tbaa !2
+  %10 = load double, double* %6, align 8, !tbaa !2
+  %11 = fadd double %9, %10
+  store double %11, double* %8, align 8, !tbaa !2
+  ret void
+}
+
+declare i32 @__kmpc_reduce(%ident_t*, i32, i32, i64, i8*, void (i8*, i8*)*, [8 x i32]*) local_unnamed_addr
+
+declare void @__kmpc_end_reduce(%ident_t*, i32, [8 x i32]*) local_unnamed_addr
+
+; Function Attrs: norecurse nounwind uwtable
+define internal void @.omp.reduction.reduction_func.10(i8* nocapture readonly, i8* nocapture readonly) #5 {
+  %3 = call i32 @sched_getcpu()
+  %IndexSExt = sext i32 %3 to i64
+  %IndexValMul = mul i64 %IndexSExt, 83
+  %IndexValAdd = add i64 %IndexValMul, 82
+  %4 = getelementptr [5976 x i64], [5976 x i64]* @BBCounters, i64 0, i64 %IndexValAdd
+  %OldBBCounter = load i64, i64* %4
+  %NewBBCounter = add i64 %OldBBCounter, 1
+  store i64 %NewBBCounter, i64* %4
+  %5 = bitcast i8* %1 to double**
+  %6 = load double*, double** %5, align 8
+  %7 = bitcast i8* %0 to double**
+  %8 = load double*, double** %7, align 8
+  %9 = load double, double* %8, align 8, !tbaa !2
+  %10 = load double, double* %6, align 8, !tbaa !2
+  %11 = fadd double %9, %10
+  store double %11, double* %8, align 8, !tbaa !2
+  ret void
+}
+
+; Function Attrs: noinline optnone uwtable
+define void @_Z18WriteOpenMPProfilePll(i64*, i64) #6 {
+  %3 = alloca i64*, align 8
+  %4 = alloca i64, align 8
+  %5 = alloca [150 x i8], align 16
+  %6 = alloca [100 x i8], align 16
+  %7 = alloca i32, align 4
+  %8 = alloca %struct._IO_FILE*, align 8
+  %9 = alloca i32, align 4
+  store i64* %0, i64** %3, align 8
+  store i64 %1, i64* %4, align 8
+  %10 = call i32 @getpid() #2
+  store i32 %10, i32* %7, align 4
+  %11 = getelementptr inbounds [100 x i8], [100 x i8]* %6, i32 0, i32 0
+  %12 = call i32 @gethostname(i8* %11, i64 99) #2
+  %13 = getelementptr inbounds [150 x i8], [150 x i8]* %5, i32 0, i32 0
+  %14 = getelementptr inbounds [100 x i8], [100 x i8]* %6, i32 0, i32 0
+  %15 = load i32, i32* %7, align 4
+  %16 = call i32 (i8*, i8*, ...) @sprintf(i8* %13, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @.str, i32 0, i32 0), i8* %14, i32 %15) #2
+  %17 = getelementptr inbounds [150 x i8], [150 x i8]* %5, i32 0, i32 0
+  %18 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([17 x i8], [17 x i8]* @.str.1, i32 0, i32 0), i8* %17)
+  %19 = getelementptr inbounds [150 x i8], [150 x i8]* %5, i32 0, i32 0
+  %20 = call %struct._IO_FILE* @fopen(i8* %19, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @.str.2, i32 0, i32 0))
+  store %struct._IO_FILE* %20, %struct._IO_FILE** %8, align 8
+  %21 = load %struct._IO_FILE*, %struct._IO_FILE** %8, align 8
+  %22 = icmp eq %struct._IO_FILE* %21, null
+  br i1 %22, label %23, label %25
+
+; <label>:23:                                     ; preds = %2
+  %24 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([17 x i8], [17 x i8]* @.str.3, i32 0, i32 0))
+  br label %45
+
+; <label>:25:                                     ; preds = %2
+  store i32 0, i32* %9, align 4
+  br label %26
+
+; <label>:26:                                     ; preds = %39, %25
+  %27 = load i32, i32* %9, align 4
+  %28 = sext i32 %27 to i64
+  %29 = load i64, i64* %4, align 8
+  %30 = icmp slt i64 %28, %29
+  br i1 %30, label %31, label %42
+
+; <label>:31:                                     ; preds = %26
+  %32 = load %struct._IO_FILE*, %struct._IO_FILE** %8, align 8
+  %33 = load i64*, i64** %3, align 8
+  %34 = load i32, i32* %9, align 4
+  %35 = sext i32 %34 to i64
+  %36 = getelementptr inbounds i64, i64* %33, i64 %35
+  %37 = load i64, i64* %36, align 8
+  %38 = call i32 (%struct._IO_FILE*, i8*, ...) @fprintf(%struct._IO_FILE* %32, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.4, i32 0, i32 0), i64 %37)
+  br label %39
+
+; <label>:39:                                     ; preds = %31
+  %40 = load i32, i32* %9, align 4
+  %41 = add nsw i32 %40, 1
+  store i32 %41, i32* %9, align 4
+  br label %26
+
+; <label>:42:                                     ; preds = %26
+  %43 = load %struct._IO_FILE*, %struct._IO_FILE** %8, align 8
+  %44 = call i32 @fclose(%struct._IO_FILE* %43)
+  br label %45
+
+; <label>:45:                                     ; preds = %42, %23
+  ret void
+}
+
+; Function Attrs: nounwind
+declare i32 @getpid() #7
+
+; Function Attrs: nounwind
+declare i32 @gethostname(i8*, i64) #7
+
+; Function Attrs: nounwind
+declare i32 @sprintf(i8*, i8*, ...) #7
+
+declare %struct._IO_FILE* @fopen(i8*, i8*) #8
+
+declare i32 @fprintf(%struct._IO_FILE*, i8*, ...) #8
+
+declare i32 @fclose(%struct._IO_FILE*) #8
+
+declare i32 @sched_getcpu()
+
+attributes #0 = { nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { argmemonly nounwind }
+attributes #2 = { nounwind }
+attributes #3 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #5 = { norecurse nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #6 = { noinline optnone uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #7 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #8 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+
+!llvm.ident = !{!0, !0}
+!llvm.module.flags = !{!1}
+
+!0 = !{!"clang version 6.0.0-1ubuntu2~16.04.1 (tags/RELEASE_600/final)"}
+!1 = !{i32 1, !"wchar_size", i32 4}
+!2 = !{!3, !3, i64 0}
+!3 = !{!"double", !4, i64 0}
+!4 = !{!"omnipotent char", !5, i64 0}
+!5 = !{!"Simple C/C++ TBAA"}
+!6 = !{!7, !7, i64 0}
+!7 = !{!"int", !4, i64 0}
+!8 = distinct !{!8, !9}
+!9 = !{!"llvm.loop.isvectorized", i32 1}
+!10 = distinct !{!10, !11}
+!11 = !{!"llvm.loop.unroll.disable"}
+!12 = distinct !{!12, !13, !9}
+!13 = !{!"llvm.loop.unroll.runtime.disable"}
+!14 = !{!15}
+!15 = distinct !{!15, !16}
+!16 = distinct !{!16, !"LVerDomain"}
+!17 = !{!18}
+!18 = distinct !{!18, !16}
+!19 = distinct !{!19, !9}
+!20 = distinct !{!20, !11}
+!21 = distinct !{!21, !9}
+!22 = !{!23}
+!23 = distinct !{!23, !24}
+!24 = distinct !{!24, !"LVerDomain"}
+!25 = !{!26}
+!26 = distinct !{!26, !24}
+!27 = distinct !{!27, !9}
+!28 = distinct !{!28, !9}
+!29 = !{!30}
+!30 = distinct !{!30, !31}
+!31 = distinct !{!31, !"LVerDomain"}
+!32 = !{!33}
+!33 = distinct !{!33, !31}
+!34 = distinct !{!34, !9}
+!35 = distinct !{!35, !9}
