@@ -16,7 +16,7 @@
 using namespace llvm;
 using namespace std;
 namespace{
-    class BBInstrument:public ModulePass
+    class OmpProfiling:public ModulePass
     {
         public:
             static char ID;
@@ -24,15 +24,15 @@ namespace{
             Function* coreFunc;
             CallInst* coreGet;
             long NumBlocks; 
-            BBInstrument():ModulePass(ID){}
+            OmpProfiling():ModulePass(ID){}
             void WriteProfile(Module& M, GlobalVariable* CounterArray, long arraySize, Instruction* outputpos);
             void IncrementCounterInBlock(Module& M, Instruction* InsertPos, long CounterNum, GlobalVariable* CounterArray);
             void GetCoreNum(Module& M, Instruction* outputpos);
             bool runOnModule(Module &M) override;
     };
 }
-char BBInstrument::ID = 0;
-static RegisterPass<BBInstrument> X("insert-openmp-profiling","OpenMP 程序的基本块插桩",false,false);
+char OmpProfiling::ID = 0;
+static RegisterPass<OmpProfiling> X("insert-openmp-profiling","OpenMP 程序的基本块插桩",false,false);
 
 static Value* castoff(Value* v)
 {
@@ -46,7 +46,7 @@ static Value* castoff(Value* v)
    }else
       return v;
 }
-void BBInstrument::GetCoreNum(Module& M, Instruction* outputpos)
+void OmpProfiling::GetCoreNum(Module& M, Instruction* outputpos)
 {
     Type* ETy = Type::getInt64Ty(M.getContext());
     // Create the getelementptr constant expression
@@ -57,7 +57,7 @@ void BBInstrument::GetCoreNum(Module& M, Instruction* outputpos)
     return;
 }
 
-void BBInstrument::WriteProfile(Module& M, GlobalVariable* CounterArray,long arraySize, Instruction* outputpos)
+void OmpProfiling::WriteProfile(Module& M, GlobalVariable* CounterArray,long arraySize, Instruction* outputpos)
 {
     IRBuilder<> Builder(outputpos);
     Type* ETy = Type::getInt64Ty(M.getContext());
@@ -68,7 +68,7 @@ void BBInstrument::WriteProfile(Module& M, GlobalVariable* CounterArray,long arr
     return;
 }
 
-void BBInstrument::IncrementCounterInBlock(Module& M, Instruction* InsertPos, long CounterNum, GlobalVariable* CounterArray)
+void OmpProfiling::IncrementCounterInBlock(Module& M, Instruction* InsertPos, long CounterNum, GlobalVariable* CounterArray)
 {
     //Instruction* InsertPos = BB->getTerminator();
     Type* ETy = Type::getInt64Ty(M.getContext());
@@ -90,7 +90,7 @@ void BBInstrument::IncrementCounterInBlock(Module& M, Instruction* InsertPos, lo
 
     return;
 }
-bool BBInstrument::runOnModule(Module &M) {
+bool OmpProfiling::runOnModule(Module &M) {
     Function* main = M.getFunction("main");
     if(main == 0)
     {

@@ -41,7 +41,6 @@ void BBProfiling::IncrementCounterInBlock(Module& M, BasicBlock* BB, unsigned Co
 
     IRBuilder<> builder(InsertPos);
 
-
     Value* indexList[2] = {ConstantInt::get(ETy, 0), ConstantInt::get(ETy,CounterNum)};
     Value* ElementPtr = builder.CreateGEP(CounterArray, ArrayRef<Value*>(indexList,2));
     Value* OldVal = builder.CreateLoad(ElementPtr, "OldBBCounter");
@@ -100,10 +99,7 @@ bool BBProfiling::runOnModule(Module &M) {
       StringRef fname = F->getName();
       if (fname.find("WriteOpenMPProfile")!=fname.npos) continue;
       for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
-         for(BasicBlock::iterator IB = BB->begin(), IE = BB->end(); IB != IE; ++IB)
-         {
             NumBlocks++;
-         }
       }
    }
    errs()<<"#BB: "<<NumBlocks<<"\n";

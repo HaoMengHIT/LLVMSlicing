@@ -1,0 +1,69 @@
+papiex version                : 1.0.3
+papiex build                  : Sep 28 2019/14:58:05
+Executable                    : /home/haomeng/Projects/LLVMSlicing/test/NPB3.0-omp-C/bin/ep.B
+Arguments                     : 
+Processor                     : Intel(R) Xeon(R) CPU E5-2697 v4 @ 2.30GHz
+Clockrate (MHz)               : 2301.000000
+Hostname                      : parallelgroup
+Options                       : MULTIPLEX,MEMORY,PAPI_TOT_INS,PAPI_LST_INS,PAPI_BR_INS,PAPI_LD_INS,PAPI_SR_INS,PAPI_TOT_CYC,PAPI_RES_STL,PAPI_L1_DCM,PAPI_L1_ICM,PAPI_TLB_DM,PAPI_TLB_IM,PAPI_L2_DCM,PAPI_L2_ICM,PAPI_CA_INV,PAPI_STL_ICY,PAPI_FUL_ICY,PAPI_BR_CN,PAPI_BR_MSP,PAPI_L2_DCA,PAPI_L2_ICA,NO_MPI_PROF,NO_IO_PROF,NO_THREADSYNC_PROF,NEXTGEN
+Domain                        : User
+Process id                    : 29894
+Session id                    : 25464
+Parent process id             : 29893
+Num. of threads               : 1
+Start                         : Sun Sep 29 10:46:44 2019
+Finish                        : Sun Sep 29 10:50:25 2019
+8032             [PROCESS] Memory resident max KB
+16               [PROCESS] Memory text (at exit) KB
+6188             [PROCESS] Memory library (at exit) KB
+2548             [PROCESS] Memory heap (at exit) KB
+456              [PROCESS] Memory stack (at exit) KB
+5084             [PROCESS] Memory shared (at exit) KB
+0                [PROCESS] Memory locked (at exit) KB
+220490463        [PROCESS] Wallclock usecs
+220487434        Real usecs
+507121088340     Real cycles
+220482987        Virtual usecs
+507331343883     Virtual cycles
+278084584466     PAPI_TOT_INS
+88565980621      PAPI_LST_INS
+20481554873      PAPI_BR_INS
+62889347627      PAPI_LD_INS
+25676632994      PAPI_SR_INS
+262441401138     PAPI_TOT_CYC
+159548004655     PAPI_RES_STL
+574275525        PAPI_L1_DCM
+3248630          PAPI_L1_ICM
+49480            PAPI_TLB_DM
+116390           PAPI_TLB_IM
+550545915        PAPI_L2_DCM
+3129735          PAPI_L2_ICM
+1326929115       PAPI_CA_INV
+4825381500       PAPI_STL_ICY
+61075766960      PAPI_FUL_ICY
+12728231095      PAPI_BR_CN
+869177040        PAPI_BR_MSP
+327097030        PAPI_L2_DCA
+3248630          PAPI_L2_ICA
+
+Event descriptions:
+PAPI_TOT_INS                  : Instructions completed
+PAPI_LST_INS                  : Load/store instructions completed
+PAPI_BR_INS                   : Branch instructions
+PAPI_LD_INS                   : Load instructions
+PAPI_SR_INS                   : Store instructions
+PAPI_TOT_CYC                  : Total cycles
+PAPI_RES_STL                  : Cycles stalled on any resource
+PAPI_L1_DCM                   : Level 1 data cache misses
+PAPI_L1_ICM                   : Level 1 instruction cache misses
+PAPI_TLB_DM                   : Data translation lookaside buffer misses
+PAPI_TLB_IM                   : Instruction translation lookaside buffer misses
+PAPI_L2_DCM                   : Level 2 data cache misses
+PAPI_L2_ICM                   : Level 2 instruction cache misses
+PAPI_CA_INV                   : Requests for cache line invalidation
+PAPI_STL_ICY                  : Cycles with no instruction issue
+PAPI_FUL_ICY                  : Cycles with maximum instruction issue
+PAPI_BR_CN                    : Conditional branch instructions
+PAPI_BR_MSP                   : Conditional branch instructions mispredicted
+PAPI_L2_DCA                   : Level 2 data cache accesses
+PAPI_L2_ICA                   : Level 2 instruction cache accesses
